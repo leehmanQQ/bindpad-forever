@@ -1,0 +1,9 @@
+package-as: BindPad
+
+# The addon lives in BindPad/; hoist it to the zip root.
+move-folders:
+  BindPad/BindPad: BindPad
+
+ignore:
+  - README.md
+  - stylua.toml
