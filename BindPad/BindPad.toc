@@ -4,6 +4,8 @@
 ## Author: Tageshi, leehmanQQ
 ## Notes: Keybinding UI for items, spells and macros. Drag anything into BindPad's slot and click it to bind a key.
 ## SavedVariables: BindPadVars
+## IconTexture: Interface\AddOns\BindPad\Icon
+## X-Curse-Project-ID: 1709144
 ## X-Website: https://github.com/leehmanQQ/bindpad-forever
 ## X-Original-Source: https://www.curseforge.com/wow/addons/bind-pad
 

@@ -18,7 +18,7 @@ This is a re-release of BindPad for **World of Warcraft: Forever** (client 1.60.
 
 ## Installation
 
-1. Download the latest release from [GitHub Releases](https://github.com/leehmanQQ/bindpad-forever/releases). It will also be on CurseForge once that project is published.
+1. Install it from [CurseForge](https://www.curseforge.com/wow/addons/bindpad-forever), or download the latest release from [GitHub Releases](https://github.com/leehmanQQ/bindpad-forever/releases).
 2. Extract the `BindPad` folder into your WoW Forever `Interface/AddOns/` folder. During the beta that's `World of Warcraft/_classic_beta_/Interface/AddOns/`.
 3. Restart the game, or type `/reload`.
 
@@ -60,18 +60,9 @@ git tag -a 1.0.0 -m "1.0.0"
 git push origin 1.0.0
 ```
 
-The workflow checks formatting, builds `BindPad-<version>-forever.zip`, creates a GitHub release and, once it's configured, uploads the zip to CurseForge. Tags that contain `alpha` or `beta` are uploaded as alpha or beta files.
+The workflow checks formatting, builds `BindPad-<version>-forever.zip`, creates a GitHub release and uploads the zip to [CurseForge](https://www.curseforge.com/wow/addons/bindpad-forever). Tags that contain `alpha` or `beta` are uploaded as alpha or beta files.
 
-### CurseForge setup (one-time)
-
-1. Create the project at <https://authors.curseforge.com/#/projects/create/choose-game>. Choose World of Warcraft, then Addon, and mention that it's a fork of BindPad. The project goes through moderation before it's public.
-2. Copy the **Project ID** from the "About Project" box on the project page.
-3. Create an API token at <https://authors.curseforge.com/#/settings/api-tokens>.
-4. In this GitHub repository, go to **Settings → Secrets and variables → Actions** and add:
-   - **Variables** tab: `CURSEFORGE_PROJECT_ID` = the project ID
-   - **Secrets** tab: `CF_API_KEY` = the API token
-
-Until both are set, the workflow only creates the GitHub release.
+The CurseForge project ID (1709144) is set in [BindPad/BindPad.toc](BindPad/BindPad.toc) as `X-Curse-Project-ID`. The upload needs a `CF_API_KEY` repository secret containing a token from <https://authors.curseforge.com/#/settings/api-tokens>.
 
 ## License
 

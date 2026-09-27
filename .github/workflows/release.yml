@@ -12,11 +12,10 @@ jobs:
   release:
     runs-on: ubuntu-latest
     env:
-      # Optional until the CurseForge project exists; without it only the GitHub release is created.
       CF_API_KEY: ${{ secrets.CF_API_KEY }}
       GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -29,6 +28,3 @@ jobs:
 
       - name: Package and upload
         uses: BigWigsMods/packager@v2
-        with:
-          # Placeholder: set the CURSEFORGE_PROJECT_ID repository variable once the project is created.
-          args: -p ${{ vars.CURSEFORGE_PROJECT_ID || '0' }}
