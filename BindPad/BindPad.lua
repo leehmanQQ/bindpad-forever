@@ -155,20 +155,37 @@ local BindPadCore = BindPadCore
 
 local SPEC_GROUP_LABELS = { DUAL_SPEC_PRIMARY, DUAL_SPEC_SECONDARY }
 
--- Names a talent group after the talent tree with the most points spent in it.
+-- Names a talent group after its talent tree with the most points; Forever talent trees are C_Traits groups.
 function BindPadCore.GetSpecializationInfo(specGroup)
     local label = SPEC_GROUP_LABELS[specGroup] or tostring(specGroup)
-    local _, _, classID = UnitClass("player")
-    local bestName, bestIcon, bestPoints = nil, nil, 0
-    for tree = 1, C_SpecializationInfo.GetNumSpecializationsForClassID(classID) do
-        local _, name, _, icon, _, _, pointsSpent =
-            C_SpecializationInfo.GetSpecializationInfo(tree, false, false, nil, nil, specGroup, classID)
-        if name and (pointsSpent or 0) > bestPoints then
-            bestName, bestIcon, bestPoints = name, icon, pointsSpent
+    local configID = C_SpecializationInfo.GetCombatConfigIDForSpecGroup(specGroup)
+    local configInfo = configID and C_Traits.GetConfigInfo(configID)
+    local treeID = configInfo and configInfo.treeIDs[1]
+    if not treeID then
+        return label
+    end
+
+    local displayInfos = C_Traits.GetGroupDisplayInfoByTreeID(treeID)
+    local groupIDs = {}
+    for _, displayInfo in ipairs(displayInfos) do
+        table.insert(groupIDs, displayInfo.groupID)
+    end
+
+    local spentByGroup = {}
+    for _, groupInfo in ipairs(C_Traits.GetGroupCurrencyInfo(configID, groupIDs)) do
+        local currencyInfo = groupInfo.currencyInfos[1]
+        spentByGroup[groupInfo.traitNodeGroupID] = currencyInfo and currencyInfo.spent or 0
+    end
+
+    local best, bestPoints = nil, 0
+    for _, displayInfo in ipairs(displayInfos) do
+        local spent = spentByGroup[displayInfo.groupID] or 0
+        if spent > bestPoints then
+            best, bestPoints = displayInfo, spent
         end
     end
-    if bestName then
-        return format("%s (%s)", bestName, label), bestIcon
+    if best then
+        return format("%s (%s)", best.displayName, label), best.icon
     end
     return label
 end
@@ -184,7 +201,7 @@ end
 function BindPadCore.CreateFrameTabs(frame)
     local labels = {
         L.TEXT_GENERAL_TAB,
-        format(L.TEXT_SPECIFIC_TAB, UnitName("player") or ""),
+        format(L.TEXT_SPECIFIC_TAB, NameUtil.FormatUnitNameForDisplay("player") or ""),
         L.TEXT_SPECIFIC_EXTRA_TAB2,
         L.TEXT_SPECIFIC_EXTRA_TAB3,
     }
@@ -204,7 +221,8 @@ end
 
 -- Modern tabs default to a wide minimum width, so fit the row inside the frame art instead.
 local MODERN_TAB_MIN_WIDTH = 44
-local MODERN_TAB_ROW_RIGHT = 345
+-- Stop short of the character-specific key bindings checkbox, which starts at x=314.
+local MODERN_TAB_ROW_RIGHT = 308
 local MODERN_TAB_SPACING = 3
 
 function BindPadCore.LayoutModernTabs(frame)
@@ -406,7 +424,14 @@ function BindPadFrameTab_OnEnter(self)
         GameTooltip:SetText(L.TOOLTIP_TAB1, nil, nil, nil, nil, 1)
         GameTooltip:AddLine(L.TOOLTIP_GENERAL_TAB_EXPLAIN, 1.0, 0.8, 0.8)
     else
-        GameTooltip:SetText(format(L["TOOLTIP_TAB" .. id], UnitName("player")), nil, nil, nil, nil, 1)
+        GameTooltip:SetText(
+            format(L["TOOLTIP_TAB" .. id], NameUtil.FormatUnitNameForDisplay("player")),
+            nil,
+            nil,
+            nil,
+            nil,
+            1
+        )
         GameTooltip:AddLine(L.TOOLTIP_SPECIFIC_TAB_EXPLAIN, 0.8, 1.0, 0.8)
     end
     GameTooltip:Show()
