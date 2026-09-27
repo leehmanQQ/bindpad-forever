@@ -6,8 +6,8 @@ Author: Tageshi
 WoW Forever re-release: leehmanQQ (https://github.com/leehmanQQ/bindpad-forever)
 
 --]]
--- luacheck: globals BindPadFrame BindPadFrame_Toggle BindPad_SlashCmd BindPadFrame_OutputText BINDPAD_TEXT_USAGE BindPadSlot_OnReceiveDrag BindPadSlot_UpdateState
--- luacheck: globals BindPadKey BindPadMacro BindPadDialogFrame BindPadMacroFrameText BindPadBindFrameAction BindPadBindFrameKey BindPadMacroPopupFrame
+
+local L = BindPadL
 
 local function concat(arg1, arg2)
     if arg1 and arg2 then
@@ -110,12 +110,6 @@ BINDPAD_BACKDROP_TOOLTIP = {
     insets = { left = 5, right = 5, top = 5, bottom = 5 },
 }
 
-local NUM_MACRO_ICONS_SHOWN = 20
-local NUM_ICONS_PER_ROW = 5
-local NUM_ICON_ROWS = 4
-local MACRO_ICON_ROW_HEIGHT = 36
-local MACRO_ICON_FILENAMES = {}
-
 -- Register BindPad frame to be controlled together with
 -- other panels in standard UI.
 UIPanelWindows["BindPadFrame"] = { area = "left", pushable = 8, whileDead = 1 }
@@ -125,7 +119,6 @@ local BINDPAD_MAXSLOTS_DEFAULT = 42
 local BINDPAD_MAXPROFILETAB = 5
 local BINDPAD_GENERAL_TAB = 1
 local BINDPAD_SAVEFILE_VERSION = 1.3
-local BINDPAD_PROFILE_VERSION252 = 252
 
 local TYPE_ITEM = "ITEM"
 local TYPE_SPELL = "SPELL"
@@ -160,9 +153,24 @@ BindPadCore = {
 
 local BindPadCore = BindPadCore
 
--- Forever has no per-talent-group name/icon API (GetTalentTabInfo is classic-only).
-function BindPadCore.GetSpecializationInfo(specIndex)
-    return "No active spec"
+local SPEC_GROUP_LABELS = { DUAL_SPEC_PRIMARY, DUAL_SPEC_SECONDARY }
+
+-- Names a talent group after the talent tree with the most points spent in it.
+function BindPadCore.GetSpecializationInfo(specGroup)
+    local label = SPEC_GROUP_LABELS[specGroup] or tostring(specGroup)
+    local _, _, classID = UnitClass("player")
+    local bestName, bestIcon, bestPoints = nil, nil, 0
+    for tree = 1, C_SpecializationInfo.GetNumSpecializationsForClassID(classID) do
+        local _, name, _, icon, _, _, pointsSpent =
+            C_SpecializationInfo.GetSpecializationInfo(tree, false, false, nil, nil, specGroup, classID)
+        if name and (pointsSpent or 0) > bestPoints then
+            bestName, bestIcon, bestPoints = name, icon, pointsSpent
+        end
+    end
+    if bestName then
+        return format("%s (%s)", bestName, label), bestIcon
+    end
+    return label
 end
 
 function BindPadFrame_Toggle()
@@ -175,10 +183,10 @@ end
 
 function BindPadCore.CreateFrameTabs(frame)
     local labels = {
-        BINDPAD_TEXT_GENERAL_TAB,
-        format(BINDPAD_TEXT_SPECIFIC_TAB, UnitName("player") or ""),
-        BINDPAD_TEXT_SPECIFIC_EXTRA_TAB2,
-        BINDPAD_TEXT_SPECIFIC_EXTRA_TAB3,
+        L.TEXT_GENERAL_TAB,
+        format(L.TEXT_SPECIFIC_TAB, UnitName("player") or ""),
+        L.TEXT_SPECIFIC_EXTRA_TAB2,
+        L.TEXT_SPECIFIC_EXTRA_TAB3,
     }
     for i, label in ipairs(labels) do
         local tab = CreateFrame("Button", "BindPadFrameTab" .. i, frame, "PanelTopTabButtonTemplate", i)
@@ -244,7 +252,7 @@ function BindPad_SlashCmd(msg)
     elseif cmd == "copyfrom" then
         BindPadCore.DoCopyFrom(arg)
     else
-        BindPadFrame_OutputText(BINDPAD_TEXT_USAGE)
+        BindPadFrame_OutputText(L.TEXT_USAGE)
     end
 end
 
@@ -271,8 +279,6 @@ function BindPadFrame_OnLoad(self)
     self:RegisterEvent("CVAR_UPDATE")
 
     self:RegisterEvent("PLAYER_ENTERING_WORLD")
-
-    GetMacroIcons(MACRO_ICON_FILENAMES)
 end
 
 function BindPadFrame_OnMouseDown(self, button)
@@ -337,9 +343,9 @@ function BindPadFrame_OnShow()
     end
 
     if BindPadVars.tab == 1 then
-        BindPadFrameTitleText:SetText(BINDPAD_TITLE)
+        BindPadFrameTitleText:SetText(L.TITLE)
     else
-        BindPadFrameTitleText:SetText(_G["BINDPAD_TITLE_" .. BindPadCore.GetCurrentProfileNum()])
+        BindPadFrameTitleText:SetText(format(L.TITLE_PROFILE, BindPadCore.GetCurrentProfileNum()))
     end
     PanelTemplates_SetTab(BindPadFrame, BindPadVars.tab)
 
@@ -376,7 +382,7 @@ function BindPadFrameTab_OnClick(self)
     local id = self:GetID()
     local function f()
         if GetCurrentBindingSet() == 1 then
-            local answer = BindPadCore.ShowDialog(BINDPAD_TEXT_CONFIRM_CHANGE_BINDING_PROFILE)
+            local answer = BindPadCore.ShowDialog(L.TEXT_CONFIRM_CHANGE_BINDING_PROFILE)
             if answer then
                 LoadBindings(2)
                 BindPadCore.SaveBindings(2)
@@ -397,11 +403,11 @@ function BindPadFrameTab_OnEnter(self)
     local id = self:GetID()
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
     if id == 1 then
-        GameTooltip:SetText(BINDPAD_TOOLTIP_TAB1, nil, nil, nil, nil, 1)
-        GameTooltip:AddLine(BINDPAD_TOOLTIP_GENERAL_TAB_EXPLAIN, 1.0, 0.8, 0.8)
+        GameTooltip:SetText(L.TOOLTIP_TAB1, nil, nil, nil, nil, 1)
+        GameTooltip:AddLine(L.TOOLTIP_GENERAL_TAB_EXPLAIN, 1.0, 0.8, 0.8)
     else
-        GameTooltip:SetText(format(_G["BINDPAD_TOOLTIP_TAB" .. id], UnitName("player")), nil, nil, nil, nil, 1)
-        GameTooltip:AddLine(BINDPAD_TOOLTIP_SPECIFIC_TAB_EXPLAIN, 0.8, 1.0, 0.8)
+        GameTooltip:SetText(format(L["TOOLTIP_TAB" .. id], UnitName("player")), nil, nil, nil, nil, 1)
+        GameTooltip:AddLine(L.TOOLTIP_SPECIFIC_TAB_EXPLAIN, 0.8, 1.0, 0.8)
     end
     GameTooltip:Show()
 end
@@ -413,9 +419,9 @@ function BindPadBindFrame_Update()
 
     local key = GetBindingKey(BindPadCore.selectedSlot.action)
     if key then
-        BindPadBindFrameKey:SetText(BINDPAD_TEXT_KEY .. BindPadCore.GetBindingText(key, "KEY_"))
+        BindPadBindFrameKey:SetText(L.TEXT_KEY .. BindPadCore.GetBindingText(key, "KEY_"))
     else
-        BindPadBindFrameKey:SetText(BINDPAD_TEXT_KEY .. BINDPAD_TEXT_NOTBOUND)
+        BindPadBindFrameKey:SetText(L.TEXT_KEY .. L.TEXT_NOTBOUND)
     end
 
     if (BindPadVars.tab or 1) == 1 then
@@ -488,7 +494,7 @@ function BindPadBindFrame_OnKeyDown(self, keyOrButton)
 
         if oldAction ~= "" and oldAction ~= padSlot.action then
             local keyText = BindPadCore.GetBindingText(keyPressed, "KEY_")
-            local text = format(BINDPAD_TEXT_CONFIRM_BINDING, keyText, oldAction, keyText, padSlot.action)
+            local text = format(L.TEXT_CONFIRM_BINDING, keyText, oldAction, keyText, padSlot.action)
             answer = BindPadCore.ShowDialog(text)
         else
             answer = true
@@ -616,31 +622,31 @@ function BindPadSlot_OnEnter(self)
             if spellBookId then
                 GameTooltip:SetSpellBookItem(spellBookId, ToSpellBank(padSlot.bookType))
             else
-                GameTooltip:SetText(BINDPAD_TOOLTIP_UNKNOWN_SPELL .. padSlot.name, 1.0, 1.0, 1.0)
+                GameTooltip:SetText(L.TOOLTIP_UNKNOWN_SPELL .. padSlot.name, 1.0, 1.0, 1.0)
             end
             if padSlot.rank then
                 GameTooltip:AddLine(padSlot.rank, 1.0, 0.7, 0.7)
             end
         end
     elseif TYPE_MACRO == padSlot.type then
-        GameTooltip:SetText(BINDPAD_TOOLTIP_MACRO .. padSlot.name, 1.0, 1.0, 1.0)
+        GameTooltip:SetText(L.TOOLTIP_MACRO .. padSlot.name, 1.0, 1.0, 1.0)
     elseif TYPE_BPMACRO == padSlot.type then
-        GameTooltip:SetText(format(BINDPAD_TOOLTIP_BINDPADMACRO, padSlot.name), 1.0, 1.0, 1.0)
+        GameTooltip:SetText(format(L.TOOLTIP_BINDPADMACRO, padSlot.name), 1.0, 1.0, 1.0)
     end
 
     -- Spell keybind is already shown if "Show Keys in Tooltip" option is ON.
     if not (BindPadVars.showHotkey and TYPE_SPELL == padSlot.type) then
         local key = GetBindingKey(padSlot.action)
         if key then
-            GameTooltip:AddLine(BINDPAD_TOOLTIP_KEYBINDING .. BindPadCore.GetBindingText(key, "KEY_"), 0.8, 0.8, 1.0)
+            GameTooltip:AddLine(L.TOOLTIP_KEYBINDING .. BindPadCore.GetBindingText(key, "KEY_"), 0.8, 0.8, 1.0)
         end
     end
 
     if not BindPadCore.CursorHasIcon() then
         if TYPE_BPMACRO == padSlot.type then
-            GameTooltip:AddLine(BINDPAD_TOOLTIP_CLICK_USAGE1, 0.8, 1.0, 0.8)
+            GameTooltip:AddLine(L.TOOLTIP_CLICK_USAGE1, 0.8, 1.0, 0.8)
         else
-            GameTooltip:AddLine(BINDPAD_TOOLTIP_CLICK_USAGE2, 0.8, 1.0, 0.8)
+            GameTooltip:AddLine(L.TOOLTIP_CLICK_USAGE2, 0.8, 1.0, 0.8)
         end
     end
 
@@ -679,47 +685,20 @@ function BindPadSlot_UpdateState(self)
     end
 end
 
-local BindPadMacroPopup_oldPadSlot = {}
 function BindPadMacroPopupFrame_Open(self)
     if InCombatLockdown() then
-        BindPadFrame_OutputText(BINDPAD_TEXT_ERR_BINDPADMACRO_INCOMBAT)
+        BindPadFrame_OutputText(L.TEXT_ERR_BINDPADMACRO_INCOMBAT)
         return
     end
-    local padSlot = BindPadCore.GetSlotInfo(self:GetID(), true)
-    local newFlag = false
-    BindPadCore.CheckCorruptedSlot(padSlot)
-
-    BindPadMacroPopup_oldPadSlot.action = padSlot.action
-    BindPadMacroPopup_oldPadSlot.id = padSlot.id
-    BindPadMacroPopup_oldPadSlot.macrotext = padSlot.macrotext
-    BindPadMacroPopup_oldPadSlot.name = padSlot.name
-    BindPadMacroPopup_oldPadSlot.texture = padSlot.texture
-    BindPadMacroPopup_oldPadSlot.type = padSlot.type
-
-    if not padSlot.type then
-        newFlag = true
-
-        padSlot.type = TYPE_BPMACRO
-        padSlot.name = BindPadCore.NewBindPadMacroName(padSlot, "1")
-        padSlot.texture = BindPadCore.GetMacroIconInfo(1)
-        padSlot.macrotext = ""
-        padSlot.action = BindPadCore.CreateBindPadMacroAction(padSlot)
-        BindPadCore.UpdateMacroText(padSlot) -- Fix
-        BindPadSlot_UpdateState(self)
+    local padSlot = BindPadCore.GetSlotInfo(self:GetID())
+    if padSlot and not BindPadCore.CheckCorruptedSlot(padSlot) and padSlot.type ~= TYPE_BPMACRO then
+        return
     end
 
-    if TYPE_BPMACRO == padSlot.type then
-        BindPadCore.selectedSlot = padSlot
-        BindPadCore.selectedSlotButton = self
-        BindPadMacroPopupEditBox:SetText(padSlot.name)
-        BindPadMacroPopupFrame.selectedIconTexture = padSlot.texture
-        BindPadMacroPopupFrame.selectedIcon = nil
-        BindPadCore.HideSubFrames()
-        BindPadMacroPopupFrame:Show()
-        if newFlag then
-            BindPadMacroPopupEditBox:HighlightText()
-        end
-    end
+    BindPadCore.HideSubFrames()
+    BindPadCore.selectedSlotButton = self
+    BindPadMacroPopupFrame.slotButton = self
+    BindPadMacroPopupFrame:Show()
 end
 
 function BindPadMacroAddButton_OnClick(self)
@@ -732,130 +711,95 @@ function BindPadMacroAddButton_OnClick(self)
     end
 end
 
-function BindPadMacroPopupFrame_OnShow(self)
-    BindPadMacroPopupEditBox:SetFocus()
-    BindPadMacroPopupFrame_Update(self)
-    BindPadMacroPopupOkayButton_Update(self)
+-- Name and icon picker for BindPad Macros, built on Blizzard's shared macro icon selector.
+BindPadMacroPopupMixin = {}
+
+function BindPadMacroPopupMixin:OnShow()
+    IconSelectorPopupFrameTemplateMixin.OnShow(self)
+    PlaySound(SOUNDKIT.IG_CHARACTER_INFO_OPEN)
+
+    self.iconDataProvider = CreateAndInitFromMixin(IconDataProviderMixin, IconDataProviderExtraType.Spellbook)
+    self:SetIconFilter(IconSelectorPopupFrameIconFilterTypes.All)
+    self:Update()
+    self.BorderBox.IconSelectorEditBox:OnTextChanged()
+    self.BorderBox.IconSelectorEditBox:SetFocus()
+
+    local selectedIconArea = self.BorderBox.SelectedIconArea
+    self.IconSelector:SetSelectedCallback(function(_, icon)
+        selectedIconArea.SelectedIconButton:SetIconTexture(icon)
+        -- The selected index isn't set yet here, but a clicked icon is always in the list.
+        selectedIconArea.SelectedIconText.SelectedIconDescription:SetText(ICON_SELECTION_CLICK)
+        selectedIconArea.SelectedIconText.SelectedIconDescription:SetFontObject(GameFontHighlightSmall)
+    end)
 end
 
-function BindPadMacroPopupFrame_OnHide(self)
+function BindPadMacroPopupMixin:OnHide()
+    IconSelectorPopupFrameTemplateMixin.OnHide(self)
+    PlaySound(SOUNDKIT.GS_TITLE_OPTION_OK)
+
+    if self.iconDataProvider then
+        self.iconDataProvider:Release()
+        self.iconDataProvider = nil
+    end
+
     if not BindPadFrame:IsVisible() then
         ShowUIPanel(BindPadFrame)
     end
 end
 
-function BindPadMacroPopupFrame_Update(self)
-    local numMacroIcons = #MACRO_ICON_FILENAMES
-    local macroPopupIcon, macroPopupButton
-    local macroPopupOffset = FauxScrollFrame_GetOffset(BindPadMacroPopupScrollFrame) or 0
-    local index
+function BindPadMacroPopupMixin:Update()
+    local padSlot = BindPadCore.GetSlotInfo(self.slotButton:GetID())
+    local editBox = self.BorderBox.IconSelectorEditBox
+    local selectedIconButton = self.BorderBox.SelectedIconArea.SelectedIconButton
 
-    -- Icon list
-    local texture
-    for i = 1, NUM_MACRO_ICONS_SHOWN do
-        macroPopupIcon = _G["BindPadMacroPopupButton" .. i .. "Icon"]
-        macroPopupButton = _G["BindPadMacroPopupButton" .. i]
-        index = (macroPopupOffset * NUM_ICONS_PER_ROW) + i
-        texture = BindPadCore.GetMacroIconInfo(index)
-        if index <= numMacroIcons and texture then
-            macroPopupIcon:SetTexture(texture)
-            macroPopupButton:Show()
-        else
-            macroPopupIcon:SetTexture("")
-            macroPopupButton:Hide()
-        end
-        if BindPadMacroPopupFrame.selectedIcon and index == BindPadMacroPopupFrame.selectedIcon then
-            macroPopupButton:SetChecked(true)
-        elseif BindPadMacroPopupFrame.selectedIconTexture == texture then
-            macroPopupButton:SetChecked(true)
-        else
-            macroPopupButton:SetChecked(false)
-        end
-    end
-
-    -- Scrollbar stuff
-    FauxScrollFrame_Update(
-        BindPadMacroPopupScrollFrame,
-        ceil(numMacroIcons / NUM_ICONS_PER_ROW),
-        NUM_ICON_ROWS,
-        MACRO_ICON_ROW_HEIGHT
-    )
-end
-
-function BindPadMacroPopupFrame_OnScroll(self, offset)
-    FauxScrollFrame_OnVerticalScroll(self, offset, MACRO_ICON_ROW_HEIGHT, BindPadMacroPopupFrame_Update)
-end
-
-function BindPadMacroPopupEditBox_OnTextChanged(self)
-    if InCombatLockdown() then
-        BindPadFrame_OutputText(BINDPAD_TEXT_ERR_BINDPADMACRO_INCOMBAT)
-        BindPadCore.HidePopup()
-        return
-    end
-
-    local padSlot = BindPadCore.selectedSlot
-    BindPadCore.DeleteBindPadMacroID(padSlot)
-    padSlot.name = BindPadCore.NewBindPadMacroName(padSlot, self:GetText())
-    if self:GetText() ~= padSlot.name then
-        BindPadFrame_OutputText(BINDPAD_TEXT_ERR_UNIQUENAME)
-        self:SetText(padSlot.name)
-    end
-    BindPadCore.UpdateMacroText(padSlot)
-    BindPadSlot_UpdateState(BindPadCore.selectedSlotButton)
-end
-
-function BindPadMacroPopupFrame_CancelEdit()
-    local padSlot = BindPadCore.GetSlotInfo(BindPadCore.selectedSlotButton:GetID())
-    if padSlot == nil then
-        return
-    end
-    BindPadCore.HidePopup()
-
-    if InCombatLockdown() then
-        BindPadFrame_OutputText(BINDPAD_TEXT_ERR_BINDPADMACRO_INCOMBAT)
-        return
-    end
-
-    padSlot.action = BindPadMacroPopup_oldPadSlot.action
-    padSlot.id = BindPadMacroPopup_oldPadSlot.id
-    padSlot.macrotext = BindPadMacroPopup_oldPadSlot.macrotext
-
-    BindPadCore.DeleteBindPadMacroID(padSlot)
-    padSlot.name = BindPadMacroPopup_oldPadSlot.name
-    BindPadCore.UpdateMacroText(padSlot)
-
-    padSlot.texture = BindPadMacroPopup_oldPadSlot.texture
-    padSlot.type = BindPadMacroPopup_oldPadSlot.type
-
-    BindPadMacroPopupFrame.selectedIcon = nil
-    BindPadSlot_UpdateState(BindPadCore.selectedSlotButton)
-end
-
-function BindPadMacroPopupOkayButton_Update(self)
-    if strlen(BindPadMacroPopupEditBox:GetText()) > 0 then
-        BindPadMacroPopupOkayButton:Enable()
+    if padSlot then
+        editBox:SetText(padSlot.name)
+        editBox:HighlightText()
+        self.IconSelector:SetSelectedIndex(self:GetIndexOfIcon(padSlot.texture))
+        selectedIconButton:SetIconTexture(padSlot.texture)
     else
-        BindPadMacroPopupOkayButton:Disable()
+        editBox:SetText("")
+        self.IconSelector:SetSelectedIndex(1)
+        selectedIconButton:SetIconTexture(self:GetIconByIndex(1))
     end
+
+    self.IconSelector:SetSelectionsDataProvider(
+        GenerateClosure(self.GetIconByIndex, self),
+        GenerateClosure(self.GetNumIcons, self)
+    )
+    self.IconSelector:ScrollToSelectedIndex()
+    self:SetSelectedIconText()
 end
 
-function BindPadMacroPopupButton_OnClick(self)
-    BindPadMacroPopupFrame.selectedIcon = self:GetID()
-        + (FauxScrollFrame_GetOffset(BindPadMacroPopupScrollFrame) * NUM_ICONS_PER_ROW)
-    -- Clear out selected texture
-    BindPadMacroPopupFrame.selectedIconTexture = nil
+function BindPadMacroPopupMixin:OkayButton_OnClick()
+    IconSelectorPopupFrameTemplateMixin.OkayButton_OnClick(self)
 
-    BindPadCore.selectedSlot.texture = BindPadCore.GetMacroIconInfo(BindPadMacroPopupFrame.selectedIcon)
-    BindPadSlot_UpdateState(BindPadCore.selectedSlotButton)
+    if InCombatLockdown() then
+        BindPadFrame_OutputText(L.TEXT_ERR_BINDPADMACRO_INCOMBAT)
+        return
+    end
 
-    BindPadMacroPopupOkayButton_Update(self)
-    BindPadMacroPopupFrame_Update(self)
-end
+    local button = self.slotButton
+    local padSlot = BindPadCore.GetSlotInfo(button:GetID(), true)
+    local name = self.BorderBox.IconSelectorEditBox:GetText():gsub('"', "")
 
-function BindPadMacroPopupOkayButton_OnClick()
-    BindPadCore.HidePopup()
-    BindPadSlot_UpdateState(BindPadCore.selectedSlotButton)
-    BindPadMacroFrame_Open(BindPadCore.selectedSlotButton)
+    if padSlot.type == TYPE_BPMACRO then
+        BindPadCore.DeleteBindPadMacroID(padSlot)
+    else
+        padSlot.type = TYPE_BPMACRO
+        padSlot.macrotext = ""
+    end
+    padSlot.name = BindPadCore.NewBindPadMacroName(padSlot, name)
+    if padSlot.name ~= name then
+        BindPadFrame_OutputText(L.TEXT_ERR_UNIQUENAME)
+    end
+    padSlot.texture = self.BorderBox.SelectedIconArea.SelectedIconButton:GetIconTexture()
+    -- Keep the old action on rename so UpdateMacroText can move its key binding to the new name.
+    padSlot.action = padSlot.action or BindPadCore.CreateBindPadMacroAction(padSlot)
+    BindPadCore.UpdateMacroText(padSlot)
+
+    BindPadSlot_UpdateState(button)
+    BindPadMacroFrame_Open(button)
 end
 
 function BindPadMacroFrame_Open(self)
@@ -871,7 +815,7 @@ function BindPadMacroFrame_Open(self)
 
     if TYPE_ITEM == padSlot.type or TYPE_SPELL == padSlot.type or TYPE_MACRO == padSlot.type then
         local function f()
-            local answer = BindPadCore.ShowDialog(format(BINDPAD_TEXT_CONFIRM_CONVERT, padSlot.type, padSlot.name))
+            local answer = BindPadCore.ShowDialog(format(L.TEXT_CONFIRM_CONVERT, padSlot.type, padSlot.name))
             if answer then
                 BindPadCore.ConvertToBindPadMacro()
             end
@@ -919,7 +863,7 @@ end
 function BindPadMacroFrame_OnHide(self)
     if BindPadCore.selectedSlot.macrotext ~= BindPadMacroFrameText:GetText() then
         if InCombatLockdown() then
-            BindPadFrame_OutputText(BINDPAD_TEXT_ERR_BINDPADMACRO_INCOMBAT)
+            BindPadFrame_OutputText(L.TEXT_ERR_BINDPADMACRO_INCOMBAT)
             BindPadMacroFrameText:SetText(BindPadCore.selectedSlot.macrotext)
         else
             BindPadCore.selectedSlot.macrotext = BindPadMacroFrameText:GetText()
@@ -979,15 +923,15 @@ end
 function BindPadProfileTab_OnEnter(self, motion)
     local profileNum = self:GetID()
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-    GameTooltip:SetText(BINDPAD_TOOLTIP_EXTRA_PROFILE .. profileNum)
+    GameTooltip:SetText(L.TOOLTIP_EXTRA_PROFILE .. profileNum)
 
     local spec1, spec2, spec3, spec4 = BindPadCore.GetSpecsForProfile(self:GetID())
     if spec4 ~= nil then
-        GameTooltip:AddLine(BINDPAD_TOOLTIP_PROFILE_CURRENTLY4, 0.8, 0.8, 1.0)
+        GameTooltip:AddLine(L.TOOLTIP_PROFILE_CURRENTLY4, 0.8, 0.8, 1.0)
     elseif spec3 ~= nil then
         GameTooltip:AddLine(
             format(
-                BINDPAD_TOOLTIP_PROFILE_CURRENTLY3,
+                L.TOOLTIP_PROFILE_CURRENTLY3,
                 BindPadCore.GetTalentSpec(spec1),
                 BindPadCore.GetTalentSpec(spec2),
                 BindPadCore.GetTalentSpec(spec3)
@@ -998,23 +942,19 @@ function BindPadProfileTab_OnEnter(self, motion)
         )
     elseif spec2 ~= nil then
         GameTooltip:AddLine(
-            format(
-                BINDPAD_TOOLTIP_PROFILE_CURRENTLY2,
-                BindPadCore.GetTalentSpec(spec1),
-                BindPadCore.GetTalentSpec(spec2)
-            ),
+            format(L.TOOLTIP_PROFILE_CURRENTLY2, BindPadCore.GetTalentSpec(spec1), BindPadCore.GetTalentSpec(spec2)),
             0.8,
             0.8,
             1.0
         )
     elseif spec1 ~= nil then
-        GameTooltip:AddLine(format(BINDPAD_TOOLTIP_PROFILE_CURRENTLY1, BindPadCore.GetTalentSpec(spec1)), 0.8, 0.8, 1.0)
+        GameTooltip:AddLine(format(L.TOOLTIP_PROFILE_CURRENTLY1, BindPadCore.GetTalentSpec(spec1)), 0.8, 0.8, 1.0)
     end
 
     local specIndex = GetSpecialization()
     if profileNum ~= BindPadCore.GetProfileForSpec(specIndex) then
         GameTooltip:AddLine(
-            format(BINDPAD_TOOLTIP_PROFILE_CLICK_FOR, profileNum, BindPadCore.GetTalentSpec(specIndex)),
+            format(L.TOOLTIP_PROFILE_CLICK_FOR, profileNum, BindPadCore.GetTalentSpec(specIndex)),
             0.8,
             1.0,
             0.8
@@ -1065,7 +1005,7 @@ function BindPadCore.PlaceIntoSlot(id, type, detail, subdetail, spellid)
         padSlot.texture = texture
     elseif type == "petaction" then
         if not detail then
-            BindPadFrame_OutputText(format(BINDPAD_TEXT_CANNOT_PLACE, type))
+            BindPadFrame_OutputText(format(L.TEXT_CANNOT_PLACE, type))
             return
         end
         local spellName = GetSpellBookName(detail, subdetail)
@@ -1111,15 +1051,14 @@ function BindPadCore.PlaceIntoSlot(id, type, detail, subdetail, spellid)
             -- A very hacky workaround to all of the above.
             padSlot.macrotext = "/cancelform [worn:Leather]\n" .. SLASH_SCRIPT1 .. " C_MountJournal.SummonByID(0)"
         else
-            local creatureName, spellID, icon, active = C_MountJournal.GetMountInfoByID(detail)
+            local creatureName, _, icon = C_MountJournal.GetMountInfoByID(detail)
             padSlot.name = BindPadCore.NewBindPadMacroName(padSlot, creatureName)
             padSlot.texture = icon
             padSlot.macrotext = SLASH_CAST1 .. " " .. creatureName
         end
     elseif type == "battlepet" then
         padSlot.type = TYPE_BPMACRO
-        local speciesID, customName, level, xp, maxXp, displayID, isFavorite, petName, petIcon, petType, creatureID =
-            C_PetJournal.GetPetInfoByPetID(detail)
+        local _, customName, _, _, _, _, _, petName, petIcon = C_PetJournal.GetPetInfoByPetID(detail)
         padSlot.name = BindPadCore.NewBindPadMacroName(padSlot, customName or petName)
         padSlot.texture = petIcon
         padSlot.macrotext = SLASH_SUMMON_BATTLE_PET1 .. " " .. (customName or petName)
@@ -1133,7 +1072,7 @@ function BindPadCore.PlaceIntoSlot(id, type, detail, subdetail, spellid)
         padSlot.texture = textureName
         padSlot.macrotext = SLASH_EQUIP_SET1 .. " " .. detail
     else
-        BindPadFrame_OutputText(format(BINDPAD_TEXT_CANNOT_PLACE, type))
+        BindPadFrame_OutputText(format(L.TEXT_CANNOT_PLACE, type))
         return
     end
 
@@ -1282,7 +1221,7 @@ function BindPadCore.SwitchProfile(newProfileNum, force)
         -- This call to DoSaveAllKeys is nesessary
         -- Putting current keybindings data into a new profile tab table.
         BindPadCore.DoSaveAllKeys()
-        BindPadFrame_OutputText(BINDPAD_TEXT_CREATE_PROFILETAB)
+        BindPadFrame_OutputText(L.TEXT_CREATE_PROFILETAB)
     end
 
     -- Restore all Blizzard's Key Bindings for this spec if possible.
@@ -1298,11 +1237,11 @@ function BindPadCore.CanPickupSlot(self)
         return false
     end
     if TYPE_SPELL == padSlot.type then
-        BindPadFrame_OutputText(BINDPAD_TEXT_ERR_SPELL_INCOMBAT)
+        BindPadFrame_OutputText(L.TEXT_ERR_SPELL_INCOMBAT)
         return false
     end
     if TYPE_MACRO == padSlot.type then
-        BindPadFrame_OutputText(BINDPAD_TEXT_ERR_MACRO_INCOMBAT)
+        BindPadFrame_OutputText(L.TEXT_ERR_MACRO_INCOMBAT)
         return false
     end
     return true
@@ -1357,15 +1296,10 @@ end
 
 function BindPadCore.CarryOverKeybinding(key, action)
     local character = BindPadCore.character
-    local idx
-    for profileNum = 1, 5 do
+    for profileNum = 1, BINDPAD_MAXPROFILETAB do
         local profile = BindPadVars[character][profileNum]
-        if profile ~= nil then
-            if (profile.version or 0) >= BINDPAD_PROFILE_VERSION252 then
-                if profile.AllKeyBindings then
-                    profile.AllKeyBindings[key] = action
-                end
-            end
+        if profile and profile.AllKeyBindings then
+            profile.AllKeyBindings[key] = action
         end
     end
 end
@@ -1396,7 +1330,7 @@ function BindPadCore.BindKey(padSlot, keyPressed)
         BindPadCore.ManuallySetBinding(keyPressed, padSlot.action)
         BindPadCore.SaveBindings(GetCurrentBindingSet())
     else
-        BindPadFrame_OutputText(BINDPAD_TEXT_CANNOT_BIND)
+        BindPadFrame_OutputText(L.TEXT_CANNOT_BIND)
     end
 end
 
@@ -1456,7 +1390,7 @@ function BindPadFrame_ChangeBindingProfile()
                 return
             end
 
-            local answer2 = BindPadCore.ShowDialog(BINDPAD_TEXT_ARE_YOU_SURE)
+            local answer2 = BindPadCore.ShowDialog(L.TEXT_ARE_YOU_SURE)
             if not answer2 then
                 BindPadFrameCharacterButton:SetChecked(GetCurrentBindingSet() == 2)
                 return
@@ -1626,7 +1560,7 @@ function BindPadCore.NewBindPadMacroName(padSlot, name)
                 and curSlot.name ~= nil
                 and strlower(name) == strlower(curSlot.name)
             then
-                local first, last, num = strfind(name, "(%d+)$")
+                local first, _, num = strfind(name, "(%d+)$")
                 if not num then
                     name = name .. "_2"
                 else
@@ -1690,7 +1624,7 @@ function BindPadCore.ConvertToBindPadMacro()
         padSlot.rank = nil
         padSlot.spellid = nil
     elseif TYPE_MACRO == padSlot.type then
-        local name, texture, macrotext = GetMacroInfo(padSlot.name)
+        local _, _, macrotext = GetMacroInfo(padSlot.name)
         padSlot.type = TYPE_BPMACRO
         padSlot.macrotext = macrotext or ""
     else
@@ -1741,7 +1675,7 @@ function BindPadCore.GetSpecTexture(specIndex)
     if specIndex == nil then
         return nil
     end
-    local name, icon = BindPadCore.GetSpecializationInfo(specIndex)
+    local _, icon = BindPadCore.GetSpecializationInfo(specIndex)
     if icon ~= nil then
         return icon
     end
@@ -1772,13 +1706,11 @@ function BindPadCore.GetTalentSpec(specIndex)
     if specIndex == nil then
         return ""
     end
-    local name, icon = BindPadCore.GetSpecializationInfo(specIndex)
-
-    return name
+    return (BindPadCore.GetSpecializationInfo(specIndex))
 end
 
 function BindPadCore.DoList(arg)
-    for k, v in pairs(BindPadVars) do
+    for k in pairs(BindPadVars) do
         local name = string.match(k, "^PROFILE_(.*)")
         if name then
             print(name)
@@ -1789,13 +1721,13 @@ end
 function BindPadCore.DoDelete(arg)
     local name = "PROFILE_" .. arg
     if name == BindPadCore.character then
-        BindPadFrame_OutputText(BINDPAD_TEXT_DO_DELETE_ERR_CURRENT)
+        BindPadFrame_OutputText(L.TEXT_DO_DELETE_ERR_CURRENT)
     else
         if BindPadVars[name] then
             BindPadVars[name] = nil
-            BindPadFrame_OutputText(string.format(BINDPAD_TEXT_DO_DELETE, arg))
+            BindPadFrame_OutputText(string.format(L.TEXT_DO_DELETE, arg))
         else
-            BindPadFrame_OutputText(string.format(BINDPAD_TEXT_DO_ERR_NOT_FOUND, arg))
+            BindPadFrame_OutputText(string.format(L.TEXT_DO_ERR_NOT_FOUND, arg))
         end
     end
 end
@@ -1803,7 +1735,7 @@ end
 function BindPadCore.DoCopyFrom(arg)
     local name = "PROFILE_" .. arg
     if name == BindPadCore.character then
-        BindPadFrame_OutputText(BINDPAD_TEXT_DO_COPY_ERR_CURRENT)
+        BindPadFrame_OutputText(L.TEXT_DO_COPY_ERR_CURRENT)
     else
         if BindPadVars[name] then
             local backupname = BindPadCore.character .. "_backup"
@@ -1816,9 +1748,9 @@ function BindPadCore.DoCopyFrom(arg)
             if BindPadFrame:IsShown() then
                 BindPadFrame_OnShow()
             end
-            BindPadFrame_OutputText(string.format(BINDPAD_TEXT_DO_COPY, arg))
+            BindPadFrame_OutputText(string.format(L.TEXT_DO_COPY, arg))
         else
-            BindPadFrame_OutputText(string.format(BINDPAD_TEXT_DO_ERR_NOT_FOUND, arg))
+            BindPadFrame_OutputText(string.format(L.TEXT_DO_ERR_NOT_FOUND, arg))
         end
     end
 end
@@ -1833,18 +1765,6 @@ function BindPadCore.DuplicateTable(table)
         end
     end
     return newtable
-end
-
-function BindPadCore.GetMacroIconInfo(index)
-    if not index then
-        return
-    end
-
-    local texture = MACRO_ICON_FILENAMES[index]
-    if texture == nil then
-        return nil
-    end
-    return tonumber(texture) or "INTERFACE\\ICONS\\" .. texture
 end
 
 function BindPadFrame_SaveAllKeysToggle(self)
@@ -1878,7 +1798,7 @@ function BindPadCore.DoSaveAllKeys()
     end
 
     for i = 1, GetNumBindings() do
-        local command, category, key1, key2 = GetBinding(i)
+        local command, _, key1, key2 = GetBinding(i)
         if key1 then
             profile.AllKeyBindings[key1] = command
             if key2 then
@@ -1909,7 +1829,7 @@ function BindPadCore.DoRestoreAllKeys()
     end
 
     local count = 0
-    for k, v in pairs(profile.AllKeyBindings) do
+    for _ in pairs(profile.AllKeyBindings) do
         count = count + 1
     end
 
@@ -1928,7 +1848,7 @@ function BindPadCore.DoRestoreAllKeys()
     -- Unbind Blizzard's key bindings only when "Save All Keys" option is ON.
     if BindPadVars.saveAllKeysFlag then
         for i = 1, GetNumBindings() do
-            local command, category, key1, key2 = GetBinding(i)
+            local _, _, key1, key2 = GetBinding(i)
             -- Ensure to be unbinded if not binded.
             if key1 and profile.AllKeyBindings[key1] == nil then
                 BindPadCore.InnerSetBinding(key1, nil)
@@ -2004,7 +1924,7 @@ function BindPadCore.InsertBindingTooltip(action)
             key = BindPadCore.GetBindingKeyFromAction(action)
         end
         if key then
-            GameTooltip:AddLine(BINDPAD_TOOLTIP_KEYBINDING .. BindPadCore.GetBindingText(key, "KEY_"), 0.8, 0.8, 1.0)
+            GameTooltip:AddLine(L.TOOLTIP_KEYBINDING .. BindPadCore.GetBindingText(key, "KEY_"), 0.8, 0.8, 1.0)
             GameTooltip:Show()
         end
     end
@@ -2084,7 +2004,7 @@ function BindPadCore.InitHotKeyList()
     if not (ActionBarButtonEventsFrame and ActionBarButtonEventsFrame.frames) then
         return
     end
-    for k, button in pairs(ActionBarButtonEventsFrame.frames) do
+    for _, button in pairs(ActionBarButtonEventsFrame.frames) do
         if button:GetName() then
             BindPadCore.CreateFrameQueue[button:GetName()] = "ActionBarButtonTemplate"
         end
@@ -2157,7 +2077,7 @@ function BindPadCore.UpdateAllHotkeys()
     local function f()
         BindPadCore.ticker_UpdateAllHotkeys = nil
         BindPadCore.AddAllHotKeys()
-        for name, info in pairs(BindPadCore.HotKeyList) do
+        for _, info in pairs(BindPadCore.HotKeyList) do
             BindPadCore.OverwriteHotKey(info)
         end
     end
@@ -2212,7 +2132,7 @@ function BindPadCore.GetActionCommand(actionSlot)
     if not actionSlot then
         return nil
     end
-    local type, id, subType, subSubType = GetActionInfo(actionSlot)
+    local type, id = GetActionInfo(actionSlot)
     if issecretvalue(id) then
         return nil
     end
@@ -2292,7 +2212,7 @@ function BindPadCore.CreateBindPadSlot(usenum)
     )
 
     BindPadCore.useBindPadSlot = usenum
-    BindPadScrollFrameNumber:SetFormattedText(BINDPAD_TEXT_SLOTS_SHOWN, usenum)
+    BindPadScrollFrameNumber:SetFormattedText(L.TEXT_SLOTS_SHOWN, usenum)
     if usenum > BINDPAD_MAXSLOTS_DEFAULT then
         BindPadShowLessSlotButton:Enable()
     else
@@ -2413,7 +2333,6 @@ end
 function BindPadCore.GetBaseForMorphingSpell(spellAction)
     if not BindPadCore.morphingSpellCache then
         BindPadCore.morphingSpellCache = {}
-        local i
         local bookType = BOOKTYPE_SPELL
         for i = 1, BindPadCore.GetSpellNum(bookType), 1 do
             local isSpell, spellId = GetSpellBookSpell(i, bookType)

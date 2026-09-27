@@ -10,11 +10,12 @@ This is a re-release of BindPad for **World of Warcraft: Forever** (client 1.60.
 ## Features
 
 - Bind keys to spells, items, macros, mounts, battle pets and equipment sets without putting them on an action bar.
-- **BindPad Macros**: create as many virtual macros as you want, without using the limited slots in Blizzard's macro panel.
-- **General** slots are shared by all your characters. **Character Specific** slots (three tabs) belong to one character.
-- Up to five profiles per character. BindPad remembers which profile goes with which talent group and switches automatically.
+- **BindPad Macros**: create as many virtual macros as you want, without using the limited slots in Blizzard's macro panel. Names and icons are picked with the same icon selector as Blizzard's macro panel.
+- **General** slots are shared by all your characters. **Character Specific** slots (three tabs) belong to one character. Tick **For all characters** on a General slot's key binding to carry that key over to your other characters.
+- Up to five profiles per character. BindPad remembers which profile goes with which talent group (shown with the talent tree you spent the most points in) and switches automatically.
 - Optionally saves and restores all of Blizzard's key bindings per profile ("Save All Keys").
 - Optionally shows BindPad hotkeys on action bar buttons and in tooltips ("Show Hotkeys").
+- Listed in the minimap's addon compartment menu.
 
 ## Installation
 
@@ -24,7 +25,7 @@ This is a re-release of BindPad for **World of Warcraft: Forever** (client 1.60.
 
 ## Usage
 
-- `/bindpad` or `/bp` opens or closes the BindPad window. You can also bind a key to **Toggle BindPad** in Blizzard's key bindings menu.
+- `/bindpad` or `/bp` opens or closes the BindPad window. You can also use the minimap's addon compartment menu, or bind a key to **Toggle BindPad** in Blizzard's key bindings menu.
 - Drag a spell, item or macro onto an empty slot. Click the slot and press a key to bind it.
 - Click the small red **+** to create a BindPad Macro. Right-click a spell, item or macro slot to convert it into a BindPad Macro.
 - Drag a slot to move it, or Shift-click it to pick it up. Right-click to clear an icon from the cursor.
@@ -42,12 +43,15 @@ The complete original user guide is in [BindPad/readme.txt](BindPad/readme.txt).
 
 ## Development
 
-The addon source lives in [BindPad/](BindPad/). Lua is formatted with [StyLua](https://github.com/JohnnyMorganz/StyLua) using [stylua.toml](stylua.toml). Editor settings are in [.editorconfig](.editorconfig).
+The addon source lives in [BindPad/](BindPad/). Lua is formatted with [StyLua](https://github.com/JohnnyMorganz/StyLua) using [stylua.toml](stylua.toml) and linted with [luacheck](https://github.com/lunarmodules/luacheck) using [.luacheckrc](.luacheckrc). Editor settings are in [.editorconfig](.editorconfig). Both checks run in CI on every push and pull request, and again before each release.
 
 ```sh
 npx @johnnymorganz/stylua-bin BindPad/          # format
-npx @johnnymorganz/stylua-bin --check BindPad/  # verify (runs in CI on release)
+npx @johnnymorganz/stylua-bin --check BindPad/  # verify formatting
+docker run --rm -v "$PWD":/data -w /data ghcr.io/lunarmodules/luacheck:v1.2.0 BindPad  # lint
 ```
+
+User-facing strings live in [BindPad/Localization.lua](BindPad/Localization.lua) as one English table. Translations only list the keys they change; anything missing falls back to English. When a new global is needed (a Blizzard API, or a new function referenced from XML), add it to `.luacheckrc`.
 
 To test in game, symlink or copy `BindPad/` into your `Interface/AddOns/` folder. When the addon runs straight from source, the version shows as `@project-version@`. The packager replaces it at release time.
 
