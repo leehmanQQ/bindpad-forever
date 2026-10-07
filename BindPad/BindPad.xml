@@ -3,88 +3,79 @@
     <Script file="BindPad.lua" />
     <Button name="BindPadMacro" inherits="SecureActionButtonTemplate" />
     <Button name="BindPadKey" inherits="SecureActionButtonTemplate" />
-    <Button name="BindPadUIPanelButtonTemplate" virtual="true">
-        <ButtonText name="$parentText" />
-        <NormalFont style="GameFontNormal" />
-        <HighlightFont style="GameFontHighlight" />
-        <DisabledFont style="GameFontDisable" />
-        <NormalTexture file="Interface\Buttons\UI-Panel-Button-Up">
-            <TexCoords left="0" right="0.625" top="0" bottom="0.6875" />
-        </NormalTexture>
-        <PushedTexture file="Interface\Buttons\UI-Panel-Button-Down">
-            <TexCoords left="0" right="0.625" top="0" bottom="0.6875" />
-        </PushedTexture>
-        <DisabledTexture file="Interface\Buttons\UI-Panel-Button-Disabled">
-            <TexCoords left="0" right="0.625" top="0" bottom="0.6875" />
-        </DisabledTexture>
-        <HighlightTexture file="Interface\Buttons\UI-Panel-Button-Highlight" alphaMode="ADD">
-            <TexCoords left="0" right="0.625" top="0" bottom="0.6875" />
-        </HighlightTexture>
-    </Button>
-    <CheckButton name="BindPadPopupButtonTemplate" virtual="true">
-        <Size x="36" y="36" />
+    <Button name="BindPadRank" inherits="SecureActionButtonTemplate" />
+    <!-- Icon art shared by every BindPad icon: the action bar button look of the modern client. -->
+    <Button name="BindPadIconArtTemplate" virtual="true">
+        <Size x="42" y="42" />
         <Layers>
             <Layer level="BACKGROUND">
-                <Texture file="Interface\Buttons\UI-EmptySlot-Disabled">
-                    <Size x="64" y="64" />
-                    <Anchors>
-                        <Anchor point="CENTER" x="0" y="-1" />
-                    </Anchors>
-                </Texture>
+                <Texture parentKey="SlotBackground" atlas="UI-HUD-ActionBar-IconFrame-Background" setAllPoints="true" />
+                <Texture parentKey="SlotArt" atlas="ui-hud-actionbar-iconframe-slot" setAllPoints="true" />
             </Layer>
-            <Layer level="ARTWORK">
-                <Texture name="$parentIcon" parentKey="Icon" setAllPoints="true" />
+            <Layer level="BORDER">
+                <Texture name="$parentIcon" parentKey="icon" setAllPoints="true" hidden="true" />
+                <MaskTexture parentKey="IconMask" atlas="UI-HUD-ActionBar-IconFrame-Mask" setAllPoints="true" hWrapMode="CLAMPTOBLACKADDITIVE" vWrapMode="CLAMPTOBLACKADDITIVE">
+                    <MaskedTextures>
+                        <MaskedTexture childKey="icon" />
+                    </MaskedTextures>
+                </MaskTexture>
             </Layer>
         </Layers>
-        <PushedTexture file="Interface\Buttons\UI-Quickslot-Depress" />
-        <HighlightTexture file="Interface\Buttons\ButtonHilight-Square" alphaMode="ADD" />
-        <CheckedTexture file="Interface\Buttons\CheckButtonHilight" alphaMode="ADD" />
+        <NormalTexture atlas="UI-HUD-ActionBar-IconFrame">
+            <Anchors>
+                <Anchor point="TOPLEFT" />
+                <Anchor point="BOTTOMRIGHT" x="1" y="0" />
+            </Anchors>
+        </NormalTexture>
+        <PushedTexture atlas="UI-HUD-ActionBar-IconFrame-Down">
+            <Anchors>
+                <Anchor point="TOPLEFT" />
+                <Anchor point="BOTTOMRIGHT" x="1" y="0" />
+            </Anchors>
+        </PushedTexture>
+        <HighlightTexture atlas="UI-HUD-ActionBar-IconFrame-Mouseover">
+            <Anchors>
+                <Anchor point="TOPLEFT" />
+                <Anchor point="BOTTOMRIGHT" x="1" y="0" />
+            </Anchors>
+        </HighlightTexture>
+    </Button>
+    <CheckButton name="BindPadPopupButtonTemplate" inherits="BindPadIconArtTemplate" virtual="true">
+        <Size x="40" y="40" />
     </CheckButton>
-    <CheckButton name="BindPadProfileTabTemplate" virtual="true" hidden="true">
-        <Size x="32" y="32" />
+    <Frame name="BindPadProfileTabTemplate" inherits="LargeSideTabButtonTemplate" enableMouse="true" virtual="true" hidden="true">
         <Layers>
-            <Layer level="BACKGROUND">
-                <Texture name="$parentBackground" file="Interface\SpellBook\SpellBook-SkillLineTab">
-                    <Size x="64" y="64" />
+            <Layer level="OVERLAY" textureSubLevel="2">
+                <FontString parentKey="Number" inherits="GameFontNormalLarge">
                     <Anchors>
-                        <Anchor point="TOPLEFT">
-                            <Offset x="-3" y="11" />
-                        </Anchor>
+                        <Anchor point="CENTER" relativeKey="$parent.Icon" />
+                    </Anchors>
+                </FontString>
+                <Texture parentKey="subIcon" hidden="true">
+                    <Size x="14" y="14" />
+                    <Anchors>
+                        <Anchor point="BOTTOMRIGHT" relativeKey="$parent.Icon" x="1" y="-1" />
                     </Anchors>
                 </Texture>
-            </Layer>
-            <Layer level="OVERLAY">
-                <Texture name="$parentSubIcon" parentKey="subIcon" hidden="true">
-                    <Size x="15" y="15" />
+                <Texture parentKey="subIcon2" hidden="true">
+                    <Size x="14" y="14" />
                     <Anchors>
-                        <Anchor point="BOTTOMRIGHT">
-                            <Offset x="2" y="-2" />
-                        </Anchor>
+                        <Anchor point="BOTTOMRIGHT" relativeKey="$parent.Icon" x="-13" y="-1" />
                     </Anchors>
                 </Texture>
-                <Texture name="$parentSubIcon2" parentKey="subIcon2" hidden="true">
-                    <Size x="15" y="15" />
+                <Texture parentKey="subIcon3" hidden="true">
+                    <Size x="14" y="14" />
                     <Anchors>
-                        <Anchor point="BOTTOMRIGHT">
-                            <Offset x="-13" y="-2" />
-                        </Anchor>
-                    </Anchors>
-                </Texture>
-                <Texture name="$parentSubIcon3" parentKey="subIcon3" hidden="true">
-                    <Size x="15" y="15" />
-                    <Anchors>
-                        <Anchor point="BOTTOMRIGHT">
-                            <Offset x="2" y="13" />
-                        </Anchor>
+                        <Anchor point="BOTTOMRIGHT" relativeKey="$parent.Icon" x="1" y="13" />
                     </Anchors>
                 </Texture>
             </Layer>
         </Layers>
         <Scripts>
-            <OnClick>
-                PlaySound(SOUNDKIT.IG_CHARACTER_INFO_TAB)
-                BindPadProfileTab_OnClick(self, button, down)
-            </OnClick>
+            <OnLoad inherit="append">
+                self:SetFillToInterior(true, 36)
+                self:SetCustomOnMouseUpHandler(BindPadProfileTab_OnClick)
+            </OnLoad>
             <OnEnter>
                 BindPadProfileTab_OnEnter(self, motion)
             </OnEnter>
@@ -95,111 +86,76 @@
                 BindPadProfileTab_OnShow(self)
             </OnShow>
         </Scripts>
-        <NormalTexture />
-        <HighlightTexture file="Interface\Buttons\ButtonHilight-Square" alphaMode="ADD" />
-        <CheckedTexture file="Interface\Buttons\CheckButtonHilight" alphaMode="ADD" />
-    </CheckButton>
-    <Button name="BindPadIconTemplate" virtual="true">
-        <Size>
-            <AbsDimension x="36" y="36" />
-        </Size>
+    </Frame>
+    <CheckButton name="BindPadSlotTemplate" inherits="BindPadIconArtTemplate" virtual="true">
         <Layers>
-            <Layer level="BACKGROUND">
-                <Texture name="$parentIcon" parentKey="icon" />
-            </Layer>
-            <Layer level="ARTWORK">
-                <FontString name="$parentHotKey" inherits="NumberFontNormalSmallGray" parentKey="hotkey" justifyH="RIGHT">
-                    <Size>
-                        <AbsDimension x="40" y="10" />
-                    </Size>
-                    <Anchors>
-                        <Anchor point="TOPLEFT">
-                            <Offset>
-                                <AbsDimension x="-1" y="-3" />
-                            </Offset>
-                        </Anchor>
-                    </Anchors>
-                </FontString>
-            </Layer>
             <Layer level="OVERLAY">
-                <FontString name="$parentName" inherits="GameFontHighlightSmallOutline" parentKey="name">
-                    <Size>
-                        <AbsDimension x="40" y="10" />
-                    </Size>
+                <Texture parentKey="border" atlas="UI-HUD-ActionBar-IconFrame-Border" hidden="true">
                     <Anchors>
-                        <Anchor point="BOTTOM">
-                            <Offset>
-                                <AbsDimension x="0" y="2" />
-                            </Offset>
-                        </Anchor>
-                    </Anchors>
-                </FontString>
-                <Texture name="$parentBorder" file="Interface\Buttons\UI-ActionButton-Border" parentKey="border" hidden="true" alphaMode="ADD">
-                    <Size>
-                        <AbsDimension x="62" y="62" />
-                    </Size>
-                    <Anchors>
-                        <Anchor point="CENTER">
-                            <Offset>
-                                <AbsDimension x="0" y="0" />
-                            </Offset>
-                        </Anchor>
+                        <Anchor point="TOPLEFT" />
+                        <Anchor point="BOTTOMRIGHT" x="1" y="0" />
                     </Anchors>
                 </Texture>
+                <FontString name="$parentHotKey" parentKey="hotkey" inherits="NumberFontNormalSmallGray" justifyH="RIGHT" wordwrap="false">
+                    <Size x="34" y="10" />
+                    <Anchors>
+                        <Anchor point="TOPRIGHT" x="-4" y="-5" />
+                    </Anchors>
+                </FontString>
+                <FontString parentKey="rank" inherits="NumberFontNormalSmall" justifyH="LEFT">
+                    <Anchors>
+                        <Anchor point="TOPLEFT" x="4" y="-5" />
+                    </Anchors>
+                    <Color r="1" g="0.82" b="0" />
+                </FontString>
+                <FontString name="$parentName" parentKey="name" inherits="GameFontHighlightSmallOutline" wordwrap="false">
+                    <Size x="38" y="10" />
+                    <Anchors>
+                        <Anchor point="BOTTOM" x="0" y="3" />
+                    </Anchors>
+                </FontString>
             </Layer>
         </Layers>
-        <NormalTexture name="$parentNormalTexture" file="Interface\Buttons\UI-Quickslot2">
-            <Size>
-                <AbsDimension x="66" y="66" />
-            </Size>
-            <Anchors>
-                <Anchor point="CENTER">
-                    <Offset>
-                        <AbsDimension x="0" y="-1" />
-                    </Offset>
-                </Anchor>
-            </Anchors>
-        </NormalTexture>
-        <PushedTexture file="Interface\Buttons\UI-Quickslot-Depress" />
-        <HighlightTexture alphaMode="ADD" file="Interface\Buttons\ButtonHilight-Square" />
-    </Button>
-    <Button name="BindPadSlotTemplate" inherits="BindPadIconTemplate" virtual="true">
         <Frames>
-            <Button name="$parentAddButton" parentKey="addbutton" alpha="0.7">
-                <Size>
-                    <AbsDimension x="16" y="16" />
-                </Size>
-                <Anchors>
-                    <Anchor point="TOPLEFT">
-                        <Offset>
-                            <AbsDimension x="0" y="-0" />
-                        </Offset>
-                    </Anchor>
-                </Anchors>
+            <Button name="$parentAddButton" parentKey="addbutton" setAllPoints="true">
+                <Layers>
+                    <Layer level="ARTWORK">
+                        <Texture parentKey="Plus" atlas="communities-icon-addchannelplus" alpha="0.35">
+                            <Size x="16" y="16" />
+                            <Anchors>
+                                <Anchor point="CENTER" />
+                            </Anchors>
+                        </Texture>
+                    </Layer>
+                </Layers>
                 <Scripts>
                     <OnLoad>
                         self:RegisterForClicks("LeftButtonUp", "RightButtonUp")
                     </OnLoad>
                     <OnClick>
-                        BindPadMacroAddButton_OnClick(self:GetParent())
+                        BindPadMacroAddButton_OnClick(self:GetParent(), button)
                     </OnClick>
                     <OnReceiveDrag>
                         BindPadSlot_OnReceiveDrag(self:GetParent())
                     </OnReceiveDrag>
                     <OnEnter>
+                        self.Plus:SetAlpha(1)
                         if not (GetCursorInfo() or BindPadCore.drag.type) then
                             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
                             GameTooltip:SetText(BindPadL.TOOLTIP_CREATE_MACRO)
                         end
-                        </OnEnter>
+                    </OnEnter>
                     <OnLeave>
+                        self.Plus:SetAlpha(0.35)
                         GameTooltip:Hide()
                     </OnLeave>
                 </Scripts>
-                <NormalTexture file="Interface\Buttons\UI-PlusButton-Up" />
-                <PushedTexture file="Interface\Buttons\UI-PlusButton-Down" />
-                <DisabledTexture file="Interface\Buttons\UI-PlusButton-Disabled" />
-                <HighlightTexture file="Interface\Buttons\UI-PlusButton-Hilight" alphaMode="ADD" />
+                <HighlightTexture atlas="UI-HUD-ActionBar-IconFrame-Mouseover">
+                    <Anchors>
+                        <Anchor point="TOPLEFT" />
+                        <Anchor point="BOTTOMRIGHT" x="1" y="0" />
+                    </Anchors>
+                </HighlightTexture>
             </Button>
         </Frames>
         <Scripts>
@@ -227,252 +183,164 @@
                 BindPadSlot_OnUpdateBindings(self)
             </OnEvent>
         </Scripts>
-    </Button>
-    <Frame name="BindPadFrame" toplevel="true" movable="true" parent="UIParent" enableMouse="true" hidden="true">
-        <Size>
-            <AbsDimension x="384" y="512" />
-        </Size>
+    </CheckButton>
+    <Frame name="BindPadFrame" toplevel="true" movable="true" parent="UIParent" enableMouse="true" hidden="true" inherits="ButtonFrameTemplate">
+        <Size x="348" y="496" />
         <Layers>
-            <Layer level="BACKGROUND">
-                <Texture name="$parentPortrait" file="Interface\MacroFrame\MacroFrame-Icon">
-                    <Size>
-                        <AbsDimension x="60" y="60" />
-                    </Size>
+            <Layer level="OVERLAY">
+                <FontString name="BindPadScrollFrameNumber" inherits="GameFontNormalSmall" justifyH="LEFT">
                     <Anchors>
-                        <Anchor point="TOPLEFT">
-                            <Offset>
-                                <AbsDimension x="7" y="-6" />
-                            </Offset>
-                        </Anchor>
-                    </Anchors>
-                </Texture>
-            </Layer>
-            <Layer level="BORDER">
-                <Texture file="Interface\PaperDollInfoFrame\UI-Character-General-TopLeft">
-                    <Size>
-                        <AbsDimension x="256" y="256" />
-                    </Size>
-                    <Anchors>
-                        <Anchor point="TOPLEFT" />
-                    </Anchors>
-                </Texture>
-                <Texture file="Interface\PaperDollInfoFrame\UI-Character-General-TopRight">
-                    <Size>
-                        <AbsDimension x="128" y="256" />
-                    </Size>
-                    <Anchors>
-                        <Anchor point="TOPRIGHT" />
-                    </Anchors>
-                </Texture>
-                <Texture file="Interface\PaperDollInfoFrame\UI-Character-General-BottomLeft">
-                    <Size>
-                        <AbsDimension x="256" y="256" />
-                    </Size>
-                    <Anchors>
-                        <Anchor point="BOTTOMLEFT" />
-                    </Anchors>
-                </Texture>
-                <Texture file="Interface\PaperDollInfoFrame\UI-Character-General-BottomRight">
-                    <Size>
-                        <AbsDimension x="128" y="256" />
-                    </Size>
-                    <Anchors>
-                        <Anchor point="BOTTOMRIGHT" />
-                    </Anchors>
-                </Texture>
-                <FontString name="BindPadFrameTitleText" inherits="GameFontNormal">
-                    <Anchors>
-                        <Anchor point="TOP" relativeTo="$parent">
-                            <Offset>
-                                <AbsDimension x="0" y="-17" />
-                            </Offset>
-                        </Anchor>
+                        <Anchor point="LEFT" relativePoint="BOTTOMLEFT" x="18" y="43" />
                     </Anchors>
                 </FontString>
             </Layer>
         </Layers>
         <Frames>
-            <ScrollFrame name="BindPadScrollFrame" inherits="UIPanelScrollFrameTemplate">
-                <Size x="292" y="321" />
+            <DropdownButton name="$parentSettingsDropdown" parentKey="SettingsDropdown" inherits="UIPanelArrowDropdownButtonTemplate">
                 <Anchors>
-                    <Anchor point="TOPLEFT" x="24" y="-75" />
-                </Anchors>
-                <Layers>
-                    <Layer level="ARTWORK">
-                        <Texture name="$parentTop" file="Interface\PaperDollInfoFrame\UI-Character-ScrollBar">
-                            <Size x="31" y="102" />
-                            <Anchors>
-                                <Anchor point="TOPLEFT" relativePoint="TOPRIGHT" x="-2" y="5" />
-                            </Anchors>
-                            <TexCoords left="0" right="0.484375" top="0" bottom="0.4" />
-                        </Texture>
-                        <Texture name="$parentBottom" file="Interface\PaperDollInfoFrame\UI-Character-ScrollBar">
-                            <Size x="31" y="106" />
-                            <Anchors>
-                                <Anchor point="BOTTOMLEFT" relativePoint="BOTTOMRIGHT" x="-2" y="-2" />
-                            </Anchors>
-                            <TexCoords left="0.515625" right="1.0" top="0" bottom="0.4140625" />
-                        </Texture>
-                        <Texture name="$parentMiddle" file="Interface\PaperDollInfoFrame\UI-Character-ScrollBar">
-                            <Size x="31" y="1" />
-                            <Anchors>
-                                <Anchor point="TOP" relativeTo="$parentTop" relativePoint="BOTTOM" />
-                                <Anchor point="BOTTOM" relativeTo="$parentBottom" relativePoint="TOP" />
-                            </Anchors>
-                            <TexCoords left="0" right="0.484375" top=".75" bottom="1.0" />
-                        </Texture>
-                    </Layer>
-                </Layers>
-                <ScrollChild>
-                    <Frame name="BindPadSlotButtonContainer">
-                        <Size x="285" y="10" />
-                        <Anchors>
-                            <Anchor point="TOPLEFT" />
-                        </Anchors>
-                        <Frames>
-                            <Frame name="BindPadScrollFrameFooter">
-                                <Size x="285" y="36" />
-                                <Layers>
-                                    <Layer level="ARTWORK">
-                                        <FontString name="BindPadScrollFrameNumber" inherits="GameFontNormal" justifyH="RIGHT" text="42 Slots shown">
-                                            <Size>
-                                                <AbsDimension x="102" y="0" />
-                                            </Size>
-                                            <Anchors>
-                                                <Anchor point="BOTTOMRIGHT" relativePoint="BOTTOMRIGHT" x="-64" y="12" />
-                                            </Anchors>
-                                        </FontString>
-                                    </Layer>
-                                </Layers>
-                                <Frames>
-                                    <Button name="BindPadShowLessSlotButton">
-                                        <Size x="32" y="32" />
-                                        <Anchors>
-                                            <Anchor point="BOTTOMRIGHT" relativePoint="BOTTOMRIGHT" x="-32" y="0" />
-                                        </Anchors>
-                                        <Scripts>
-                                            <OnClick function="BindPadShowLessSlotButton_OnClick" />
-                                            <OnEnter>
-                                                GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-                                                GameTooltip:SetText(BindPadL.TOOLTIP_SHOW_LESS_SLOT, nil, nil, nil, nil, 1)
-                                            </OnEnter>
-                                            <OnLeave>
-                                                GameTooltip:Hide()
-                                            </OnLeave>
-                                        </Scripts>
-                                        <NormalTexture file="Interface\Buttons\UI-SpellbookIcon-PrevPage-Up" />
-                                        <PushedTexture file="Interface\Buttons\UI-SpellbookIcon-PrevPage-Down" />
-                                        <DisabledTexture file="Interface\Buttons\UI-SpellbookIcon-PrevPage-Disabled" />
-                                        <HighlightTexture file="Interface\Buttons\UI-Common-MouseHilight" alphaMode="ADD" />
-                                    </Button>
-                                    <Button name="BindPadShowMoreSlotButton">
-                                        <Size x="32" y="32" />
-                                        <Anchors>
-                                            <Anchor point="BOTTOMRIGHT" relativePoint="BOTTOMRIGHT" x="0" y="0" />
-                                        </Anchors>
-                                        <Scripts>
-                                            <OnClick function="BindPadShowMoreSlotButton_OnClick" />
-                                            <OnEnter>
-                                                GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-                                                GameTooltip:SetText(BindPadL.TOOLTIP_SHOW_MORE_SLOT, nil, nil, nil, nil, 1)
-                                            </OnEnter>
-                                            <OnLeave>
-                                                GameTooltip:Hide()
-                                            </OnLeave>
-                                        </Scripts>
-                                        <NormalTexture file="Interface\Buttons\UI-SpellbookIcon-NextPage-Up" />
-                                        <PushedTexture file="Interface\Buttons\UI-SpellbookIcon-NextPage-Down" />
-                                        <DisabledTexture file="Interface\Buttons\UI-SpellbookIcon-NextPage-Disabled" />
-                                        <HighlightTexture file="Interface\Buttons\UI-Common-MouseHilight" alphaMode="ADD" />
-                                    </Button>
-                                </Frames>
-                            </Frame>
-                        </Frames>
-                    </Frame>
-                </ScrollChild>
-            </ScrollFrame>
-            <CheckButton name="BindPadProfileTab1" inherits="BindPadProfileTabTemplate" hidden="false" id="1">
-                <Anchors>
-                    <Anchor point="TOPLEFT" relativePoint="TOPRIGHT">
-                        <Offset>
-                            <AbsDimension x="-32" y="-85" />
-                        </Offset>
-                    </Anchor>
-                </Anchors>
-            </CheckButton>
-            <CheckButton name="BindPadProfileTab2" inherits="BindPadProfileTabTemplate" hidden="false" id="2">
-                <Anchors>
-                    <Anchor point="TOPLEFT" relativeTo="BindPadProfileTab1" relativePoint="BOTTOMLEFT">
-                        <Offset>
-                            <AbsDimension x="0" y="-22" />
-                        </Offset>
-                    </Anchor>
-                </Anchors>
-            </CheckButton>
-            <CheckButton name="BindPadProfileTab3" inherits="BindPadProfileTabTemplate" hidden="false" id="3">
-                <Anchors>
-                    <Anchor point="TOPLEFT" relativeTo="BindPadProfileTab2" relativePoint="BOTTOMLEFT">
-                        <Offset>
-                            <AbsDimension x="0" y="-22" />
-                        </Offset>
-                    </Anchor>
-                </Anchors>
-            </CheckButton>
-            <CheckButton name="BindPadProfileTab4" inherits="BindPadProfileTabTemplate" hidden="false" id="4">
-                <Anchors>
-                    <Anchor point="TOPLEFT" relativeTo="BindPadProfileTab3" relativePoint="BOTTOMLEFT">
-                        <Offset>
-                            <AbsDimension x="0" y="-22" />
-                        </Offset>
-                    </Anchor>
-                </Anchors>
-            </CheckButton>
-            <CheckButton name="BindPadProfileTab5" inherits="BindPadProfileTabTemplate" id="5">
-                <Anchors>
-                    <Anchor point="TOPLEFT" relativeTo="BindPadProfileTab4" relativePoint="BOTTOMLEFT">
-                        <Offset>
-                            <AbsDimension x="0" y="-22" />
-                        </Offset>
-                    </Anchor>
-                </Anchors>
-            </CheckButton>
-            <CheckButton name="$parentCharacterButton" inherits="UICheckButtonTemplate">
-                <Size>
-                    <AbsDimension x="20" y="20" />
-                </Size>
-                <Anchors>
-                    <Anchor point="TOPRIGHT">
-                        <Offset>
-                            <AbsDimension x="-50" y="-49" />
-                        </Offset>
-                    </Anchor>
+                    <Anchor point="TOPRIGHT" x="-14" y="-38" />
                 </Anchors>
                 <Scripts>
-                    <OnClick>
-                        BindPadFrame_ChangeBindingProfile()
-                    </OnClick>
                     <OnEnter>
                         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-                        GameTooltip:SetText(CHARACTER_SPECIFIC_KEYBINDING_TOOLTIP, nil, nil, nil, nil, 1)
+                        GameTooltip:SetText(BindPadL.TOOLTIP_OPTIONS)
                     </OnEnter>
                     <OnLeave>
                         GameTooltip:Hide()
                     </OnLeave>
                 </Scripts>
-            </CheckButton>
-            <Button name="$parentExitButton" inherits="BindPadUIPanelButtonTemplate">
-                <Size>
-                    <AbsDimension x="80" y="22" />
-                </Size>
+            </DropdownButton>
+            <ScrollFrame name="BindPadScrollFrame" inherits="ScrollFrameTemplate">
+                <KeyValues>
+                    <KeyValue key="scrollBarX" value="6" type="number" />
+                    <KeyValue key="scrollBarTopY" value="0" type="number" />
+                    <KeyValue key="scrollBarBottomY" value="0" type="number" />
+                    <KeyValue key="scrollBarHideIfUnscrollable" value="true" type="boolean" />
+                </KeyValues>
                 <Anchors>
-                    <Anchor point="CENTER" relativeTo="$parent" relativePoint="TOPLEFT">
-                        <Offset>
-                            <AbsDimension x="303" y="-422" />
-                        </Offset>
-                    </Anchor>
+                    <Anchor point="TOPLEFT" x="14" y="-70" />
+                    <Anchor point="BOTTOMRIGHT" x="-30" y="60" />
+                </Anchors>
+                <ScrollChild>
+                    <Frame name="BindPadSlotButtonContainer">
+                        <Size x="304" y="10" />
+                    </Frame>
+                </ScrollChild>
+            </ScrollFrame>
+            <Button name="BindPadShowMoreSlotButton">
+                <Size x="28" y="28" />
+                <Anchors>
+                    <Anchor point="RIGHT" relativePoint="BOTTOMRIGHT" x="-12" y="43" />
                 </Anchors>
                 <Scripts>
-                    <OnLoad>
+                    <OnClick function="BindPadShowMoreSlotButton_OnClick" />
+                    <OnEnter>
+                        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+                        GameTooltip:SetText(BindPadL.TOOLTIP_SHOW_MORE_SLOT, nil, nil, nil, nil, 1)
+                    </OnEnter>
+                    <OnLeave>
+                        GameTooltip:Hide()
+                    </OnLeave>
+                </Scripts>
+                <NormalTexture file="Interface\Buttons\UI-SpellbookIcon-NextPage-Up" />
+                <PushedTexture file="Interface\Buttons\UI-SpellbookIcon-NextPage-Down" />
+                <DisabledTexture file="Interface\Buttons\UI-SpellbookIcon-NextPage-Disabled" />
+                <HighlightTexture file="Interface\Buttons\UI-Common-MouseHilight" alphaMode="ADD" />
+            </Button>
+            <Button name="BindPadShowLessSlotButton">
+                <Size x="28" y="28" />
+                <Anchors>
+                    <Anchor point="RIGHT" relativeTo="BindPadShowMoreSlotButton" relativePoint="LEFT" x="-2" y="0" />
+                </Anchors>
+                <Scripts>
+                    <OnClick function="BindPadShowLessSlotButton_OnClick" />
+                    <OnEnter>
+                        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+                        GameTooltip:SetText(BindPadL.TOOLTIP_SHOW_LESS_SLOT, nil, nil, nil, nil, 1)
+                    </OnEnter>
+                    <OnLeave>
+                        GameTooltip:Hide()
+                    </OnLeave>
+                </Scripts>
+                <NormalTexture file="Interface\Buttons\UI-SpellbookIcon-PrevPage-Up" />
+                <PushedTexture file="Interface\Buttons\UI-SpellbookIcon-PrevPage-Down" />
+                <DisabledTexture file="Interface\Buttons\UI-SpellbookIcon-PrevPage-Disabled" />
+                <HighlightTexture file="Interface\Buttons\UI-Common-MouseHilight" alphaMode="ADD" />
+            </Button>
+            <Frame name="BindPadProfileTab1" inherits="BindPadProfileTabTemplate" hidden="false" id="1">
+                <Anchors>
+                    <Anchor point="TOPLEFT" relativePoint="TOPRIGHT" x="0" y="-60" />
+                </Anchors>
+            </Frame>
+            <Frame name="BindPadProfileTab2" inherits="BindPadProfileTabTemplate" hidden="false" id="2">
+                <Anchors>
+                    <Anchor point="TOPLEFT" relativeTo="BindPadProfileTab1" relativePoint="BOTTOMLEFT" x="0" y="-4" />
+                </Anchors>
+            </Frame>
+            <Frame name="BindPadProfileTab3" inherits="BindPadProfileTabTemplate" hidden="false" id="3">
+                <Anchors>
+                    <Anchor point="TOPLEFT" relativeTo="BindPadProfileTab2" relativePoint="BOTTOMLEFT" x="0" y="-4" />
+                </Anchors>
+            </Frame>
+            <Frame name="BindPadProfileTab4" inherits="BindPadProfileTabTemplate" hidden="false" id="4">
+                <Anchors>
+                    <Anchor point="TOPLEFT" relativeTo="BindPadProfileTab3" relativePoint="BOTTOMLEFT" x="0" y="-4" />
+                </Anchors>
+            </Frame>
+            <Frame name="BindPadProfileTab5" inherits="BindPadProfileTabTemplate" id="5">
+                <Anchors>
+                    <Anchor point="TOPLEFT" relativeTo="BindPadProfileTab4" relativePoint="BOTTOMLEFT" x="0" y="-4" />
+                </Anchors>
+            </Frame>
+            <Button name="$parentOpenSpellBookButton" inherits="UIPanelButtonTemplate">
+                <Size x="90" y="22" />
+                <Anchors>
+                    <Anchor point="BOTTOMLEFT" x="4" y="4" />
+                </Anchors>
+                <Scripts>
+                    <OnLoad inherit="prepend">
+                        self:SetText(BindPadL.TEXT_SPELLBOOK)
+                    </OnLoad>
+                    <OnClick>
+                        BindPadFrame_OpenSpellBook()
+                    </OnClick>
+                </Scripts>
+            </Button>
+            <Button name="$parentOpenMacroButton" inherits="UIPanelButtonTemplate">
+                <Size x="80" y="22" />
+                <Anchors>
+                    <Anchor point="LEFT" relativeTo="$parentOpenSpellBookButton" relativePoint="RIGHT" x="2" y="0" />
+                </Anchors>
+                <Scripts>
+                    <OnLoad inherit="prepend">
+                        self:SetText(BindPadL.TEXT_MACROS)
+                    </OnLoad>
+                    <OnClick>
+                        ShowMacroFrame()
+                    </OnClick>
+                </Scripts>
+            </Button>
+            <Button name="$parentOpenBagButton" inherits="UIPanelButtonTemplate">
+                <Size x="70" y="22" />
+                <Anchors>
+                    <Anchor point="LEFT" relativeTo="$parentOpenMacroButton" relativePoint="RIGHT" x="2" y="0" />
+                </Anchors>
+                <Scripts>
+                    <OnLoad inherit="prepend">
+                        self:SetText(BindPadL.TEXT_BAGS)
+                    </OnLoad>
+                    <OnClick>
+                        OpenAllBags()
+                    </OnClick>
+                </Scripts>
+            </Button>
+            <Button name="$parentExitButton" inherits="UIPanelButtonTemplate">
+                <Size x="80" y="22" />
+                <Anchors>
+                    <Anchor point="BOTTOMRIGHT" x="-5" y="4" />
+                </Anchors>
+                <Scripts>
+                    <OnLoad inherit="prepend">
                         self:SetText(BindPadL.TEXT_EXIT)
                     </OnLoad>
                     <OnClick>
@@ -480,171 +348,6 @@
                     </OnClick>
                 </Scripts>
             </Button>
-            <Button name="$parentOpenSpellBookButton" inherits="BindPadUIPanelButtonTemplate">
-                <Size>
-                    <AbsDimension x="29" y="58" />
-                </Size>
-                <HitRectInsets>
-                    <AbsInset left="0" right="0" top="18" bottom="0" />
-                </HitRectInsets>
-                <Anchors>
-                    <Anchor point="BOTTOMLEFT" relativeTo="$parent" relativePoint="TOPLEFT">
-                        <Offset>
-                            <AbsDimension x="19" y="-433" />
-                        </Offset>
-                    </Anchor>
-                </Anchors>
-                <NormalTexture file="Interface\Buttons\UI-MicroButton-Spellbook-Up" />
-                <PushedTexture file="Interface\Buttons\UI-MicroButton-Spellbook-Down" />
-                <DisabledTexture file="Interface\Buttons\UI-MicroButton-Spellbook-Disabled" />
-                <HighlightTexture file="Interface\Buttons\UI-MicroButton-Hilight" />
-                <Scripts>
-                    <OnClick>
-                        BindPadFrame_OpenSpellBook()
-                    </OnClick>
-                    <OnEnter>
-                        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-                        GameTooltip:SetText(BindPadL.TOOLTIP_OPENSPELLBOOK, 1.0, 1.0, 1.0)
-                        GameTooltip:Show()
-                    </OnEnter>
-                    <OnLeave>
-                        GameTooltip:Hide()
-                    </OnLeave>
-                </Scripts>
-            </Button>
-            <Button name="$parentCloseButton" inherits="UIPanelCloseButton">
-                <Anchors>
-                    <Anchor point="TOPRIGHT" relativeTo="$parent" relativePoint="TOPRIGHT">
-                        <Offset>
-                            <AbsDimension x="-29" y="-8" />
-                        </Offset>
-                    </Anchor>
-                </Anchors>
-            </Button>
-            <Button name="$parentOpenMacroButton" inherits="BindPadUIPanelButtonTemplate">
-                <Size>
-                    <AbsDimension x="29" y="58" />
-                </Size>
-                <HitRectInsets>
-                    <AbsInset left="0" right="0" top="18" bottom="0" />
-                </HitRectInsets>
-                <Anchors>
-                    <Anchor point="BOTTOMLEFT" relativeTo="$parentOpenSpellBookButton" relativePoint="BOTTOMRIGHT">
-                        <Offset>
-                            <AbsDimension x="0" y="0" />
-                        </Offset>
-                    </Anchor>
-                </Anchors>
-                <NormalTexture file="Interface\Buttons\UI-MicroButton-MainMenu-Up" />
-                <PushedTexture file="Interface\Buttons\UI-MicroButton-MainMenu-Down" />
-                <DisabledTexture file="Interface\Buttons\UI-MicroButton-MainMenu-Disabled" />
-                <HighlightTexture file="Interface\Buttons\UI-MicroButton-Hilight" />
-                <Scripts>
-                    <OnClick>
-                        ShowMacroFrame()
-                    </OnClick>
-                    <OnEnter>
-                        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-                        GameTooltip:SetText(BindPadL.TOOLTIP_OPENMACRO, 1.0, 1.0, 1.0)
-                        GameTooltip:Show()
-                    </OnEnter>
-                    <OnLeave>
-                        GameTooltip:Hide()
-                    </OnLeave>
-                </Scripts>
-            </Button>
-            <Button name="$parentOpenBagButton" inherits="BindPadUIPanelButtonTemplate">
-                <Size>
-                    <AbsDimension x="29" y="58" />
-                </Size>
-                <HitRectInsets>
-                    <AbsInset left="0" right="0" top="18" bottom="0" />
-                </HitRectInsets>
-                <Anchors>
-                    <Anchor point="BOTTOMLEFT" relativeTo="$parentOpenMacroButton" relativePoint="BOTTOMRIGHT">
-                        <Offset>
-                            <AbsDimension x="0" y="0" />
-                        </Offset>
-                    </Anchor>
-                </Anchors>
-                <NormalTexture file="Interface\Buttons\UI-MicroButton-Quest-Up" />
-                <PushedTexture file="Interface\Buttons\UI-MicroButton-Quest-Down" />
-                <DisabledTexture file="Interface\Buttons\UI-MicroButton-Quest-Disabled" />
-                <HighlightTexture file="Interface\Buttons\UI-MicroButton-Hilight" />
-                <Scripts>
-                    <OnClick>
-                        OpenAllBags()
-                    </OnClick>
-                    <OnEnter>
-                        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-                        GameTooltip:SetText(BindPadL.TOOLTIP_OPENBAG, 1.0, 1.0, 1.0)
-                        GameTooltip:Show()
-                    </OnEnter>
-                    <OnLeave>
-                        GameTooltip:Hide()
-                    </OnLeave>
-                </Scripts>
-            </Button>
-            <CheckButton name="$parentSaveAllKeysButton" inherits="UICheckButtonTemplate">
-                <Size>
-                    <AbsDimension x="20" y="20" />
-                </Size>
-                <Anchors>
-                    <Anchor point="BOTTOMLEFT" relativeTo="$parentOpenBagButton" relativePoint="BOTTOMRIGHT">
-                        <Offset>
-                            <AbsDimension x="8" y="16" />
-                        </Offset>
-                    </Anchor>
-                </Anchors>
-                <HitRectInsets>
-                    <AbsInset left="0" right="-70" top="0" bottom="0" />
-                </HitRectInsets>
-                <Scripts>
-                    <OnClick>
-                        BindPadFrame_SaveAllKeysToggle(self)
-                    </OnClick>
-                    <OnLoad>
-                        BindPadCheckButton_SetLabel(self, BindPadL.TEXT_SAVE_ALL_KEYS)
-                    </OnLoad>
-                    <OnEnter>
-                        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-                        GameTooltip:SetText(BindPadL.TOOLTIP_SAVE_ALL_KEYS, nil, nil, nil, nil, 1)
-                    </OnEnter>
-                    <OnLeave>
-                        GameTooltip:Hide()
-                    </OnLeave>
-                </Scripts>
-            </CheckButton>
-            <CheckButton name="$parentShowHotkeyButton" inherits="UICheckButtonTemplate">
-                <Size>
-                    <AbsDimension x="20" y="20" />
-                </Size>
-                <Anchors>
-                    <Anchor point="BOTTOMLEFT" relativeTo="$parentOpenBagButton" relativePoint="BOTTOMRIGHT">
-                        <Offset>
-                            <AbsDimension x="8" y="0" />
-                        </Offset>
-                    </Anchor>
-                </Anchors>
-                <HitRectInsets>
-                    <AbsInset left="0" right="-70" top="0" bottom="0" />
-                </HitRectInsets>
-                <Scripts>
-                    <OnClick>
-                        BindPadFrame_ShowHotkeyToggle(self)
-                    </OnClick>
-                    <OnLoad>
-                        BindPadCheckButton_SetLabel(self, BindPadL.TEXT_SHOW_HOTKEY)
-                    </OnLoad>
-                    <OnEnter>
-                        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-                        GameTooltip:SetText(BindPadL.TOOLTIP_SHOW_HOTKEY, nil, nil, nil, nil, 1)
-                    </OnEnter>
-                    <OnLeave>
-                        GameTooltip:Hide()
-                    </OnLeave>
-                </Scripts>
-            </CheckButton>
         </Frames>
         <Scripts>
             <OnLoad>
@@ -669,99 +372,69 @@
             </OnHide>
         </Scripts>
     </Frame>
-    <Button name="BindPadBindFrame" toplevel="true" parent="UIParent" frameStrata="DIALOG" movable="true" enableMouse="true" hidden="true" enableKeyboard="true" inherits="BackdropTemplate">
-        <Size>
-            <AbsDimension x="600" y="200" />
-        </Size>
+    <Button name="BindPadBindFrame" toplevel="true" parent="UIParent" frameStrata="DIALOG" movable="true" enableMouse="true" hidden="true" enableKeyboard="true">
+        <Size x="420" y="214" />
         <Anchors>
-            <Anchor point="CENTER">
-                <Offset>
-                    <AbsDimension x="0" y="0" />
-                </Offset>
-            </Anchor>
+            <Anchor point="CENTER" />
         </Anchors>
-        <KeyValues>
-            <KeyValue key="backdropInfo" value="BACKDROP_DIALOG_32_32" type="global"/>
-            <KeyValue key="backdropColor" value="TOOLTIP_DEFAULT_BACKGROUND_COLOR" type="global"/>
-        </KeyValues>
         <Layers>
             <Layer level="ARTWORK">
-                <Texture name="$parentHeader" file="Interface\DialogFrame\UI-DialogBox-Header">
-                    <Size>
-                        <AbsDimension x="200" y="64" />
-                    </Size>
+                <Texture parentKey="Icon">
+                    <Size x="44" y="44" />
                     <Anchors>
-                        <Anchor point="TOP">
-                            <Offset>
-                                <AbsDimension x="0" y="12" />
-                            </Offset>
-                        </Anchor>
+                        <Anchor point="TOP" x="0" y="-34" />
                     </Anchors>
                 </Texture>
-                <FontString name="$parentHeaderText" parentKey="HeaderText" inherits="GameFontNormal">
-                    <Size>
-                        <AbsDimension x="200" y="13" />
-                    </Size>
+                <MaskTexture parentKey="IconMask" atlas="UI-HUD-ActionBar-IconFrame-Mask" hWrapMode="CLAMPTOBLACKADDITIVE" vWrapMode="CLAMPTOBLACKADDITIVE">
                     <Anchors>
-                        <Anchor point="TOP" relativeTo="$parentHeader">
-                            <Offset>
-                                <AbsDimension x="0" y="-13" />
-                            </Offset>
-                        </Anchor>
+                        <Anchor point="TOPLEFT" relativeKey="$parent.Icon" />
+                        <Anchor point="BOTTOMRIGHT" relativeKey="$parent.Icon" />
+                    </Anchors>
+                    <MaskedTextures>
+                        <MaskedTexture childKey="Icon" />
+                    </MaskedTextures>
+                </MaskTexture>
+                <FontString name="$parentAction" inherits="GameFontNormalLarge" wordwrap="false">
+                    <Size x="380" y="0" />
+                    <Anchors>
+                        <Anchor point="TOP" relativeKey="$parent.Icon" relativePoint="BOTTOM" x="0" y="-10" />
                     </Anchors>
                 </FontString>
-                <FontString parentKey="PressKeyText" inherits="GameFontNormal">
+                <FontString parentKey="PressKeyText" inherits="GameFontHighlight">
                     <Anchors>
-                        <Anchor point="CENTER" relativeTo="$parent">
-                            <Offset>
-                                <AbsDimension x="0" y="32" />
-                            </Offset>
-                        </Anchor>
+                        <Anchor point="TOP" relativeTo="$parentAction" relativePoint="BOTTOM" x="0" y="-12" />
                     </Anchors>
                 </FontString>
-                <FontString name="$parentAction" inherits="GameFontNormalLarge" text="no action">
+                <FontString name="$parentKey" inherits="GameFontNormal">
                     <Anchors>
-                        <Anchor point="CENTER" relativeTo="$parent">
-                            <Offset>
-                                <AbsDimension x="0" y="8" />
-                            </Offset>
-                        </Anchor>
-                    </Anchors>
-                </FontString>
-                <FontString name="$parentKey" inherits="GameFontNormal" text="unbinded">
-                    <Anchors>
-                        <Anchor point="CENTER" relativeTo="$parent">
-                            <Offset>
-                                <AbsDimension x="0" y="-16" />
-                            </Offset>
-                        </Anchor>
+                        <Anchor point="TOP" relativeKey="$parent.PressKeyText" relativePoint="BOTTOM" x="0" y="-8" />
                     </Anchors>
                 </FontString>
             </Layer>
+            <Layer level="OVERLAY">
+                <Texture parentKey="IconBorder" atlas="UI-HUD-ActionBar-IconFrame">
+                    <Anchors>
+                        <Anchor point="TOPLEFT" relativeKey="$parent.Icon" />
+                        <Anchor point="BOTTOMRIGHT" relativeKey="$parent.Icon" x="1" y="0" />
+                    </Anchors>
+                </Texture>
+            </Layer>
         </Layers>
         <Frames>
+            <Frame parentKey="Border" inherits="DialogBorderTranslucentTemplate" />
+            <Frame parentKey="Header" inherits="DialogHeaderTemplate" />
             <Button name="$parentCloseButton" inherits="UIPanelCloseButton">
                 <Anchors>
-                    <Anchor point="TOPRIGHT">
-                        <Offset>
-                            <AbsDimension x="-3" y="-3" />
-                        </Offset>
-                    </Anchor>
+                    <Anchor point="TOPRIGHT" x="-4" y="-4" />
                 </Anchors>
             </Button>
-            <Button name="$parentExitButton" inherits="BindPadUIPanelButtonTemplate">
-                <Size>
-                    <AbsDimension x="80" y="26" />
-                </Size>
+            <Button name="$parentExitButton" inherits="UIPanelButtonTemplate">
+                <Size x="90" y="22" />
                 <Anchors>
-                    <Anchor point="BOTTOMRIGHT" relativeTo="$parent" relativePoint="BOTTOMRIGHT">
-                        <Offset>
-                            <AbsDimension x="-12" y="12" />
-                        </Offset>
-                    </Anchor>
+                    <Anchor point="BOTTOMRIGHT" x="-16" y="16" />
                 </Anchors>
                 <Scripts>
-                    <OnLoad>
+                    <OnLoad inherit="prepend">
                         self:SetText(BindPadL.TEXT_EXIT)
                     </OnLoad>
                     <OnClick>
@@ -769,19 +442,13 @@
                     </OnClick>
                 </Scripts>
             </Button>
-            <Button name="$parentUnbindButton" inherits="BindPadUIPanelButtonTemplate">
-                <Size>
-                    <AbsDimension x="80" y="26" />
-                </Size>
+            <Button name="$parentUnbindButton" inherits="UIPanelButtonTemplate">
+                <Size x="90" y="22" />
                 <Anchors>
-                    <Anchor point="BOTTOMRIGHT" relativeTo="$parentExitButton" relativePoint="BOTTOMLEFT">
-                        <Offset>
-                            <AbsDimension x="-2" y="0" />
-                        </Offset>
-                    </Anchor>
+                    <Anchor point="RIGHT" relativeTo="$parentExitButton" relativePoint="LEFT" x="-4" y="0" />
                 </Anchors>
                 <Scripts>
-                    <OnLoad>
+                    <OnLoad inherit="prepend">
                         self:SetText(BindPadL.TEXT_UNBIND)
                     </OnLoad>
                     <OnClick>
@@ -790,18 +457,12 @@
                 </Scripts>
             </Button>
             <CheckButton name="$parentForAllCharacterButton" inherits="UICheckButtonTemplate">
-                <Size>
-                    <AbsDimension x="20" y="20" />
-                </Size>
+                <Size x="24" y="24" />
                 <Anchors>
-                    <Anchor point="BOTTOMLEFT" relativeTo="$parent" relativePoint="BOTTOMLEFT">
-                        <Offset>
-                            <AbsDimension x="12" y="9" />
-                        </Offset>
-                    </Anchor>
+                    <Anchor point="BOTTOMLEFT" x="14" y="15" />
                 </Anchors>
                 <HitRectInsets>
-                    <AbsInset left="0" right="-70" top="0" bottom="0" />
+                    <AbsInset left="0" right="-110" top="0" bottom="0" />
                 </HitRectInsets>
                 <Scripts>
                     <OnClick>
@@ -821,9 +482,9 @@
             </CheckButton>
         </Frames>
         <Scripts>
-            <OnLoad inherit="prepend">
+            <OnLoad>
                 self:RegisterForClicks("AnyUp")
-                self.HeaderText:SetText(BindPadL.KEYBINDINGS_TITLE)
+                self.Header:Setup(BindPadL.KEYBINDINGS_TITLE)
                 self.PressKeyText:SetText(BindPadL.TEXT_PRESSKEY)
             </OnLoad>
             <OnHide>
@@ -849,113 +510,30 @@
             <KeyValue key="editBoxHeaderText" value="MACRO_POPUP_TEXT" type="global" />
         </KeyValues>
         <Anchors>
-            <Anchor point="TOPLEFT" relativeTo="BindPadFrame" relativePoint="TOPRIGHT" x="-40" y="-40" />
+            <Anchor point="TOPLEFT" relativeTo="BindPadFrame" relativePoint="TOPRIGHT" x="48" y="0" />
         </Anchors>
     </Frame>
-    <Frame name="BindPadMacroFrame" toplevel="true" movable="true" parent="UIParent" enableMouse="true" hidden="true">
-        <Size>
-            <AbsDimension x="384" y="512" />
-        </Size>
+    <Frame name="BindPadMacroFrame" toplevel="true" movable="true" parent="UIParent" enableMouse="true" hidden="true" inherits="ButtonFrameTemplate">
+        <Size x="348" y="440" />
         <Anchors>
-            <Anchor point="TOPLEFT">
-                <Offset>
-                    <AbsDimension x="0" y="-104" />
-                </Offset>
-            </Anchor>
+            <Anchor point="TOPLEFT" x="16" y="-116" />
         </Anchors>
-        <HitRectInsets>
-            <AbsInset left="0" right="34" top="0" bottom="75" />
-        </HitRectInsets>
         <Layers>
-            <Layer level="BACKGROUND">
-                <Texture name="$parentPortrait" file="Interface\MacroFrame\MacroFrame-Icon">
-                    <Size>
-                        <AbsDimension x="60" y="60" />
-                    </Size>
+            <Layer level="OVERLAY">
+                <FontString name="BindPadMacroFrameSlotName" inherits="GameFontNormalLarge" justifyH="LEFT" wordwrap="false">
+                    <Size x="270" y="16" />
                     <Anchors>
-                        <Anchor point="TOPLEFT">
-                            <Offset>
-                                <AbsDimension x="7" y="-6" />
-                            </Offset>
-                        </Anchor>
-                    </Anchors>
-                </Texture>
-            </Layer>
-            <Layer level="BORDER">
-                <Texture file="Interface\PaperDollInfoFrame\UI-Character-General-TopLeft">
-                    <Size>
-                        <AbsDimension x="256" y="256" />
-                    </Size>
-                    <Anchors>
-                        <Anchor point="TOPLEFT" />
-                    </Anchors>
-                </Texture>
-                <Texture file="Interface\PaperDollInfoFrame\UI-Character-General-TopRight">
-                    <Size>
-                        <AbsDimension x="128" y="256" />
-                    </Size>
-                    <Anchors>
-                        <Anchor point="TOPRIGHT" />
-                    </Anchors>
-                </Texture>
-                <Texture file="Interface\MacroFrame\MacroFrame-BotLeft">
-                    <Size>
-                        <AbsDimension x="256" y="256" />
-                    </Size>
-                    <Anchors>
-                        <Anchor point="BOTTOMLEFT" />
-                    </Anchors>
-                </Texture>
-                <Texture file="Interface\MacroFrame\MacroFrame-BotRight">
-                    <Size>
-                        <AbsDimension x="128" y="256" />
-                    </Size>
-                    <Anchors>
-                        <Anchor point="BOTTOMRIGHT" />
-                    </Anchors>
-                </Texture>
-                <FontString parentKey="TitleText" inherits="GameFontNormal">
-                    <Anchors>
-                        <Anchor point="TOP" relativeTo="$parent">
-                            <Offset>
-                                <AbsDimension x="0" y="-17" />
-                            </Offset>
-                        </Anchor>
-                    </Anchors>
-                </FontString>
-            </Layer>
-            <Layer level="ARTWORK">
-                <Texture name="BindPadMacroFrameSlotBackground" file="Interface\Buttons\UI-EmptySlot">
-                    <Size>
-                        <AbsDimension x="64" y="64" />
-                    </Size>
-                    <Anchors>
-                        <Anchor point="TOPLEFT">
-                            <Offset>
-                                <AbsDimension x="16" y="-72" />
-                            </Offset>
-                        </Anchor>
-                    </Anchors>
-                </Texture>
-                <FontString name="BindPadMacroFrameSlotName" inherits="GameFontNormalLarge" justifyH="LEFT">
-                    <Size>
-                        <AbsDimension x="256" y="16" />
-                    </Size>
-                    <Anchors>
-                        <Anchor point="TOPLEFT" relativeTo="BindPadMacroFrameSlotBackground" relativePoint="TOPRIGHT">
-                            <Offset>
-                                <AbsDimension x="-4" y="-15" />
-                            </Offset>
-                        </Anchor>
+                        <Anchor point="TOPLEFT" x="66" y="-74" />
                     </Anchors>
                 </FontString>
                 <FontString name="BindPadMacroFrameEnterMacroText" inherits="GameFontHighlightSmall" text="ENTER_MACRO_LABEL">
                     <Anchors>
-                        <Anchor point="TOPLEFT" relativeTo="BindPadMacroFrameSlotBackground" relativePoint="BOTTOMLEFT">
-                            <Offset>
-                                <AbsDimension x="8" y="0" />
-                            </Offset>
-                        </Anchor>
+                        <Anchor point="TOPLEFT" x="16" y="-124" />
+                    </Anchors>
+                </FontString>
+                <FontString name="BindPadMacroFrameCharLimitText" inherits="GameFontHighlightSmall">
+                    <Anchors>
+                        <Anchor point="BOTTOM" x="0" y="34" />
                     </Anchors>
                 </FontString>
             </Layer>
@@ -963,34 +541,32 @@
         <Frames>
             <CheckButton name="BindPadMacroFrameSlotButton" inherits="BindPadPopupButtonTemplate" id="0">
                 <Anchors>
-                    <Anchor point="TOPLEFT" relativeTo="BindPadMacroFrameSlotBackground">
-                        <Offset>
-                            <AbsDimension x="14" y="-14" />
-                        </Offset>
-                    </Anchor>
+                    <Anchor point="TOPLEFT" x="16" y="-72" />
                 </Anchors>
             </CheckButton>
-            <ScrollFrame name="BindPadMacroFrameScrollFrame" inherits="UIPanelScrollFrameTemplate">
-                <Size>
-                    <AbsDimension x="286" y="241" />
-                </Size>
+            <Frame name="BindPadMacroFrameTextBackground" inherits="TooltipBackdropTemplate">
                 <Anchors>
-                    <Anchor point="TOPLEFT" relativeTo="BindPadMacroFrameSlotBackground" relativePoint="BOTTOMLEFT">
-                        <Offset>
-                            <AbsDimension x="11" y="-18" />
-                        </Offset>
-                    </Anchor>
+                    <Anchor point="TOPLEFT" x="12" y="-138" />
+                    <Anchor point="BOTTOMRIGHT" x="-14" y="52" />
                 </Anchors>
+            </Frame>
+            <ScrollFrame name="BindPadMacroFrameScrollFrame" inherits="ScrollFrameTemplate">
                 <KeyValues>
-                    <KeyValue key="scrollBarHideable" value="true" type="boolean" />
+                    <KeyValue key="scrollBarX" value="4" type="number" />
+                    <KeyValue key="scrollBarTopY" value="0" type="number" />
+                    <KeyValue key="scrollBarBottomY" value="0" type="number" />
+                    <KeyValue key="scrollBarHideIfUnscrollable" value="true" type="boolean" />
                 </KeyValues>
+                <Anchors>
+                    <Anchor point="TOPLEFT" relativeTo="BindPadMacroFrameTextBackground" x="8" y="-8" />
+                    <Anchor point="BOTTOMRIGHT" relativeTo="BindPadMacroFrameTextBackground" x="-22" y="8" />
+                </Anchors>
                 <ScrollChild>
                     <EditBox name="BindPadMacroFrameText" multiLine="true" autoFocus="false">
-                        <Size>
-                            <AbsDimension x="286" y="241" />
-                        </Size>
+                        <Size x="292" y="234" />
                         <Scripts>
                             <OnTextChanged>
+                                BindPadMacroFrameCharLimitText:SetFormattedText(BindPadL.TEXT_CHAR_LIMIT, #self:GetText())
                                 ScrollingEdit_OnTextChanged(self, self:GetParent())
                             </OnTextChanged>
                             <OnEscapePressed>
@@ -1004,15 +580,12 @@
                                 ScrollingEdit_OnUpdate(self, elapsed, self:GetParent())
                             </OnUpdate>
                         </Scripts>
-                        <!--<FontString inherits="GameFontHighlightSmall"/>-->
                         <FontString inherits="ChatFontNormal" />
                     </EditBox>
                 </ScrollChild>
             </ScrollFrame>
             <Button name="BindPadMacroFrameTextButton">
-                <Size>
-                    <AbsDimension x="286" y="241" />
-                </Size>
+                <Size x="292" y="234" />
                 <Anchors>
                     <Anchor point="TOPLEFT" relativeTo="BindPadMacroFrameText" />
                 </Anchors>
@@ -1022,33 +595,10 @@
                     </OnClick>
                 </Scripts>
             </Button>
-            <Frame name="BindPadMacroFrameTextBackground" inherits="BackdropTemplate">
-                <Size>
-                    <AbsDimension x="322" y="251" />
-                </Size>
+            <Button name="BindPadMacroFrameEditButton" inherits="UIPanelButtonTemplate" text="CHANGE_MACRO_NAME_ICON">
+                <Size x="170" y="22" />
                 <Anchors>
-                    <Anchor point="TOPLEFT" relativeTo="BindPadMacroFrame">
-                        <Offset>
-                            <AbsDimension x="18" y="-149" />
-                        </Offset>
-                    </Anchor>
-                </Anchors>
-                <KeyValues>
-                    <KeyValue key="backdropInfo" value="BINDPAD_BACKDROP_TOOLTIP" type="global"/>
-                    <KeyValue key="backdropColor" value="TOOLTIP_DEFAULT_BACKGROUND_COLOR" type="global"/>
-                    <KeyValue key="backdropBorderColor" value="TOOLTIP_DEFAULT_COLOR" type="global"/>
-                </KeyValues>
-            </Frame>
-            <Button name="BindPadMacroFrameEditButton" inherits="BindPadUIPanelButtonTemplate" text="CHANGE_MACRO_NAME_ICON">
-                <Size>
-                    <AbsDimension x="170" y="22" />
-                </Size>
-                <Anchors>
-                    <Anchor point="TOPLEFT" relativeTo="BindPadMacroFrameSlotBackground">
-                        <Offset>
-                            <AbsDimension x="51" y="-30" />
-                        </Offset>
-                    </Anchor>
+                    <Anchor point="BOTTOMLEFT" relativeTo="BindPadMacroFrameSlotButton" relativePoint="BOTTOMRIGHT" x="8" y="0" />
                 </Anchors>
                 <Scripts>
                     <OnClick>
@@ -1056,56 +606,10 @@
                     </OnClick>
                 </Scripts>
             </Button>
-            <Button name="BindPadMacroFrameTestButton" inherits="BindPadUIPanelButtonTemplate,SecureActionButtonTemplate">
-                <Size>
-                    <AbsDimension x="80" y="22" />
-                </Size>
+            <Button name="BindPadMacroDeleteButton" inherits="UIPanelButtonTemplate" text="DELETE">
+                <Size x="80" y="22" />
                 <Anchors>
-                    <Anchor point="CENTER" relativeTo="BindPadMacroFrame" relativePoint="TOPLEFT">
-                        <Offset>
-                            <AbsDimension x="222" y="-422" />
-                        </Offset>
-                    </Anchor>
-                </Anchors>
-                <Scripts>
-                    <OnLoad>
-                        self:SetText(BindPadL.TEXT_TEST)
-                        self:SetAttribute("type", "macro")
-                    </OnLoad>
-                    <OnMouseDown>
-                        if not InCombatLockdown() then
-                            self:SetAttribute("macrotext", BindPadMacroFrameText:GetText())
-                        end
-                    </OnMouseDown>
-                </Scripts>
-            </Button>
-            <Button name="BindPadMacroFrameExitButton" inherits="BindPadUIPanelButtonTemplate" text="EXIT">
-                <Size>
-                    <AbsDimension x="80" y="22" />
-                </Size>
-                <Anchors>
-                    <Anchor point="CENTER" relativeTo="BindPadMacroFrame" relativePoint="TOPLEFT">
-                        <Offset>
-                            <AbsDimension x="303" y="-422" />
-                        </Offset>
-                    </Anchor>
-                </Anchors>
-                <Scripts>
-                    <OnClick>
-                        HideUIPanel(self:GetParent())
-                    </OnClick>
-                </Scripts>
-            </Button>
-            <Button name="BindPadMacroDeleteButton" inherits="BindPadUIPanelButtonTemplate" text="DELETE">
-                <Size>
-                    <AbsDimension x="80" y="22" />
-                </Size>
-                <Anchors>
-                    <Anchor point="BOTTOMLEFT" relativeTo="BindPadMacroFrame">
-                        <Offset>
-                            <AbsDimension x="17" y="79" />
-                        </Offset>
-                    </Anchor>
+                    <Anchor point="BOTTOMLEFT" x="4" y="4" />
                 </Anchors>
                 <Scripts>
                     <OnClick>
@@ -1113,19 +617,39 @@
                     </OnClick>
                 </Scripts>
             </Button>
-            <Button name="BindPadMacroFrameCloseButton" inherits="UIPanelCloseButton">
+            <Button name="BindPadMacroFrameExitButton" inherits="UIPanelButtonTemplate" text="EXIT">
+                <Size x="80" y="22" />
                 <Anchors>
-                    <Anchor point="TOPRIGHT" relativeTo="BindPadMacroFrame" relativePoint="TOPRIGHT">
-                        <Offset>
-                            <AbsDimension x="-29" y="-8" />
-                        </Offset>
-                    </Anchor>
+                    <Anchor point="BOTTOMRIGHT" x="-5" y="4" />
                 </Anchors>
+                <Scripts>
+                    <OnClick>
+                        HideUIPanel(self:GetParent())
+                    </OnClick>
+                </Scripts>
+            </Button>
+            <Button name="BindPadMacroFrameTestButton" inherits="UIPanelButtonTemplate, SecureActionButtonTemplate">
+                <Size x="80" y="22" />
+                <Anchors>
+                    <Anchor point="RIGHT" relativeTo="BindPadMacroFrameExitButton" relativePoint="LEFT" x="-2" y="0" />
+                </Anchors>
+                <Scripts>
+                    <OnLoad inherit="prepend">
+                        self:SetText(BindPadL.TEXT_TEST)
+                        self:SetAttribute("type", "macro")
+                    </OnLoad>
+                    <OnMouseDown inherit="prepend">
+                        if not InCombatLockdown() then
+                            self:SetAttribute("macrotext", BindPadMacroFrameText:GetText())
+                        end
+                    </OnMouseDown>
+                </Scripts>
             </Button>
         </Frames>
         <Scripts>
             <OnLoad>
-                self.TitleText:SetText(BindPadL.MACRO_TITLE)
+                self:SetTitle(BindPadL.MACRO_TITLE)
+                self:SetPortraitToAsset("Interface\\MacroFrame\\MacroFrame-Icon")
             </OnLoad>
             <OnShow>
                 PlaySound(SOUNDKIT.IG_CHARACTER_INFO_OPEN)
@@ -1140,39 +664,21 @@
             </OnMouseWheel>
         </Scripts>
     </Frame>
-    <Frame name="BindPadDialogFrame" parent="UIParent" toplevel="true" enableKeyboard="true" enableMouse="true" frameStrata="DIALOG" hidden="true" inherits="BackdropTemplate">
-        <Size>
-            <AbsDimension x="420" y="72" />
-        </Size>
+    <Frame name="BindPadDialogFrame" parent="UIParent" toplevel="true" enableKeyboard="true" enableMouse="true" frameStrata="DIALOG" hidden="true">
+        <Size x="420" y="100" />
         <Anchors>
-            <Anchor point="TOP" relativePoint="TOP">
-                <Offset>
-                    <AbsDimension x="0" y="-135" />
-                </Offset>
-            </Anchor>
+            <Anchor point="TOP" x="0" y="-135" />
         </Anchors>
-        <KeyValues>
-            <KeyValue key="backdropInfo" value="BACKDROP_DIALOG_32_32" type="global"/>
-            <KeyValue key="backdropColor" value="TOOLTIP_DEFAULT_BACKGROUND_COLOR" type="global"/>
-        </KeyValues>
         <Layers>
             <Layer level="ARTWORK">
                 <FontString name="$parentText" parentKey="text" inherits="GameFontHighlight">
-                    <Size>
-                        <AbsDimension x="290" y="0" />
-                    </Size>
+                    <Size x="290" y="0" />
                     <Anchors>
-                        <Anchor point="TOP">
-                            <Offset>
-                                <AbsDimension x="0" y="-16" />
-                            </Offset>
-                        </Anchor>
+                        <Anchor point="TOP" x="0" y="-22" />
                     </Anchors>
                 </FontString>
                 <Texture name="$parentAlertIcon" file="Interface\DialogFrame\UI-Dialog-Icon-AlertNew">
-                    <Size>
-                        <AbsDimension x="36" y="36" />
-                    </Size>
+                    <Size x="36" y="36" />
                     <Anchors>
                         <Anchor point="LEFT" x="24" y="0" />
                     </Anchors>
@@ -1180,28 +686,17 @@
             </Layer>
         </Layers>
         <Frames>
-            <Button name="$parentButton1" inherits="BindPadUIPanelButtonTemplate" parentKey="okaybutton" id="1" text="OKAY">
-                <Size>
-                    <AbsDimension x="128" y="21" />
-                </Size>
+            <Frame parentKey="Border" inherits="DialogBorderTemplate" />
+            <Button name="$parentButton1" inherits="UIPanelButtonTemplate" parentKey="okaybutton" id="1" text="OKAY">
+                <Size x="128" y="22" />
                 <Anchors>
-                    <Anchor point="BOTTOMRIGHT" relativePoint="BOTTOM">
-                        <Offset>
-                            <AbsDimension x="-6" y="16" />
-                        </Offset>
-                    </Anchor>
+                    <Anchor point="BOTTOMRIGHT" relativePoint="BOTTOM" x="-6" y="18" />
                 </Anchors>
             </Button>
-            <Button name="$parentButton2" inherits="BindPadUIPanelButtonTemplate" parentKey="cancelbutton" id="2" text="CANCEL">
-                <Size>
-                    <AbsDimension x="128" y="21" />
-                </Size>
+            <Button name="$parentButton2" inherits="UIPanelButtonTemplate" parentKey="cancelbutton" id="2" text="CANCEL">
+                <Size x="128" y="22" />
                 <Anchors>
-                    <Anchor point="LEFT" relativeTo="$parentButton1" relativePoint="RIGHT">
-                        <Offset>
-                            <AbsDimension x="13" y="0" />
-                        </Offset>
-                    </Anchor>
+                    <Anchor point="LEFT" relativeTo="$parentButton1" relativePoint="RIGHT" x="12" y="0" />
                 </Anchors>
             </Button>
         </Frames>

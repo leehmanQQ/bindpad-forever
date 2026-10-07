@@ -99,16 +99,42 @@ local function GetSpecialization()
     return spec
 end
 
--- BACKDROP_TOOLTIP_16_16_5555 no longer exists on the modern client.
-BINDPAD_BACKDROP_TOOLTIP = {
-    bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-    edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-    tile = true,
-    tileEdge = true,
-    tileSize = 16,
-    edgeSize = 16,
-    insets = { left = 5, right = 5, top = 5, bottom = 5 },
-}
+--
+-- Spell ranks. WoW Forever keeps every learned rank as its own spellbook item, but casting a spell
+-- by name always casts the highest rank, so a specific rank can only be cast by its spell ID.
+--
+
+-- "Rank 3" for a ranked spell, nil for anything else ("Racial", "Passive", ...).
+local function GetSpellRankText(spellID)
+    local subtext = spellID and C_Spell.GetSpellSubtext(spellID)
+    if subtext and subtext:find("%d") then
+        return subtext
+    end
+    return nil
+end
+
+-- True when a higher rank of the spell is known.
+local function IsLowRankSpell(spellID)
+    local slot, bank = C_SpellBook.FindSpellBookSlotForSpell(spellID, true)
+    return slot ~= nil and C_SpellBook.IsSpellBookItemLowRank(slot, bank)
+end
+
+-- A slot pinned to a rank casts exactly that rank; otherwise it follows the highest rank.
+local function IsRankPinned(padSlot)
+    return padSlot.rank ~= nil and padSlot.spellid ~= nil
+end
+
+local function GetRankedSpellCommand(spellName, rank)
+    return format("SPELL %s(%s)", spellName, rank)
+end
+
+-- The BindPadKey button (and binding suffix) a spell slot is cast through.
+local function GetSpellSlotCommand(padSlot)
+    if IsRankPinned(padSlot) then
+        return GetRankedSpellCommand(padSlot.name, padSlot.rank)
+    end
+    return "SPELL " .. padSlot.name
+end
 
 -- Register BindPad frame to be controlled together with
 -- other panels in standard UI.
@@ -198,6 +224,9 @@ function BindPadFrame_Toggle()
     end
 end
 
+-- The top tabs start right of the portrait.
+local MODERN_TAB_ROW_LEFT = 60
+
 function BindPadCore.CreateFrameTabs(frame)
     local labels = {
         L.TEXT_GENERAL_TAB,
@@ -213,7 +242,7 @@ function BindPadCore.CreateFrameTabs(frame)
         tab:SetScript("OnLeave", GameTooltip_Hide)
         -- PanelTemplates_SetNumTabs anchors tabs 2..n itself.
         if i == 1 then
-            tab:SetPoint("TOPLEFT", frame, "TOPLEFT", 65, -39)
+            tab:SetPoint("TOPLEFT", frame, "TOPLEFT", MODERN_TAB_ROW_LEFT, -28)
         end
     end
     BindPadCore.LayoutModernTabs(frame)
@@ -221,8 +250,8 @@ end
 
 -- Modern tabs default to a wide minimum width, so fit the row inside the frame art instead.
 local MODERN_TAB_MIN_WIDTH = 44
--- Stop short of the character-specific key bindings checkbox, which starts at x=314.
-local MODERN_TAB_ROW_RIGHT = 308
+-- Stop short of the options dropdown in the top right corner.
+local MODERN_TAB_ROW_RIGHT = 312
 local MODERN_TAB_SPACING = 3
 
 function BindPadCore.LayoutModernTabs(frame)
@@ -239,7 +268,7 @@ function BindPadCore.LayoutModernTabs(frame)
     end
 
     -- Only the character-specific tab has a long label; give it whatever room is left.
-    local available = MODERN_TAB_ROW_RIGHT - 65 - othersWidth - MODERN_TAB_SPACING * 3
+    local available = MODERN_TAB_ROW_RIGHT - MODERN_TAB_ROW_LEFT - othersWidth - MODERN_TAB_SPACING * 3
     frame.maxTabWidth = max(frame.minTabWidth, available)
     for i = 1, 4 do
         PanelTemplates_TabResize(_G["BindPadFrameTab" .. i], nil, nil, frame.minTabWidth, frame.maxTabWidth)
@@ -256,6 +285,35 @@ end
 
 function BindPadFrame_OpenSpellBook()
     PlayerSpellsUtil.OpenToSpellBookTab()
+end
+
+local function AddOptionTooltip(elementDescription, text)
+    elementDescription:SetTooltip(function(tooltip)
+        GameTooltip_SetTitle(tooltip, MenuUtil.GetElementText(elementDescription))
+        GameTooltip_AddNormalLine(tooltip, text)
+    end)
+end
+
+-- The options dropdown in the top right corner, like the spellbook's settings.
+function BindPadCore.SetupSettingsMenu(dropdown, rootDescription)
+    local characterSpecific = rootDescription:CreateCheckbox(L.TEXT_CHARACTER_SPECIFIC, function()
+        return GetCurrentBindingSet() == 2
+    end, function()
+        BindPadFrame_ChangeBindingProfile()
+        -- Turning it off asks for confirmation, which the open menu would cover.
+        return MenuResponse.CloseAll
+    end)
+    AddOptionTooltip(characterSpecific, CHARACTER_SPECIFIC_KEYBINDING_TOOLTIP)
+
+    local saveAllKeys = rootDescription:CreateCheckbox(L.TEXT_SAVE_ALL_KEYS, function()
+        return BindPadVars.saveAllKeysFlag
+    end, BindPadFrame_SaveAllKeysToggle)
+    AddOptionTooltip(saveAllKeys, L.TOOLTIP_SAVE_ALL_KEYS)
+
+    local showHotkey = rootDescription:CreateCheckbox(L.TEXT_SHOW_HOTKEY, function()
+        return BindPadVars.showHotkey
+    end, BindPadFrame_ShowHotkeyToggle)
+    AddOptionTooltip(showHotkey, L.TOOLTIP_SHOW_HOTKEY)
 end
 
 function BindPad_SlashCmd(msg)
@@ -275,6 +333,9 @@ function BindPad_SlashCmd(msg)
 end
 
 function BindPadFrame_OnLoad(self)
+    self:SetPortraitToAsset("Interface\\AddOns\\BindPad\\Icon")
+    self.SettingsDropdown:SetupMenu(BindPadCore.SetupSettingsMenu)
+
     BindPadCore.CreateFrameTabs(self)
     PanelTemplates_SetNumTabs(BindPadFrame, 4)
 
@@ -361,21 +422,14 @@ function BindPadFrame_OnShow()
     end
 
     if BindPadVars.tab == 1 then
-        BindPadFrameTitleText:SetText(L.TITLE)
+        BindPadFrame:SetTitle(L.TITLE)
     else
-        BindPadFrameTitleText:SetText(format(L.TITLE_PROFILE, BindPadCore.GetCurrentProfileNum()))
+        BindPadFrame:SetTitle(format(L.TITLE_PROFILE, BindPadCore.GetCurrentProfileNum()))
     end
     PanelTemplates_SetTab(BindPadFrame, BindPadVars.tab)
 
-    -- Update character button
-    BindPadFrameCharacterButton:SetChecked(GetCurrentBindingSet() == 2)
-
-    -- Update Option buttons
-    BindPadFrameSaveAllKeysButton:SetChecked(BindPadVars.saveAllKeysFlag)
-
     BindPadVars.showHotkey = (BindPadVars.showHotkey or BindPadVars.showKeyInTooltipFlag)
     BindPadVars.showKeyInTooltipFlag = nil
-    BindPadFrameShowHotkeyButton:SetChecked(BindPadVars.showHotkey)
 
     -- Update profile tab
     for i = 1, BINDPAD_MAXPROFILETAB, 1 do
@@ -437,16 +491,34 @@ function BindPadFrameTab_OnEnter(self)
     GameTooltip:Show()
 end
 
+-- A readable name for a binding action: the slot name for BindPad actions, the key bindings menu name otherwise.
+local function GetBindingLabel(action)
+    local label = action:match("^CLICK BindPadKey:%u+ (.+)$") or action:match("^CLICK BindPadMacro:(.+)$")
+    return label or _G["BINDING_NAME_" .. action] or action
+end
+
+local GRAY_TEXT = "|cff808080%s|r"
+local WHITE_TEXT = "|cffffffff%s|r"
+
+local function GetSlotDisplayName(padSlot)
+    if IsRankPinned(padSlot) then
+        return padSlot.name .. " " .. format(GRAY_TEXT, "(" .. padSlot.rank .. ")")
+    end
+    return padSlot.name
+end
+
 function BindPadBindFrame_Update()
     BindPadCore.CancelDialogs()
 
-    BindPadBindFrameAction:SetText(BindPadCore.selectedSlot.action)
+    local padSlot = BindPadCore.selectedSlot
+    BindPadBindFrame.Icon:SetTexture(padSlot.texture)
+    BindPadBindFrameAction:SetText(GetSlotDisplayName(padSlot))
 
-    local key = GetBindingKey(BindPadCore.selectedSlot.action)
+    local key = GetBindingKey(padSlot.action)
     if key then
-        BindPadBindFrameKey:SetText(L.TEXT_KEY .. BindPadCore.GetBindingText(key, "KEY_"))
+        BindPadBindFrameKey:SetText(L.TEXT_KEY .. format(WHITE_TEXT, BindPadCore.GetBindingText(key, "KEY_")))
     else
-        BindPadBindFrameKey:SetText(L.TEXT_KEY .. L.TEXT_NOTBOUND)
+        BindPadBindFrameKey:SetText(L.TEXT_KEY .. format(GRAY_TEXT, L.TEXT_NOTBOUND))
     end
 
     if (BindPadVars.tab or 1) == 1 then
@@ -519,7 +591,13 @@ function BindPadBindFrame_OnKeyDown(self, keyOrButton)
 
         if oldAction ~= "" and oldAction ~= padSlot.action then
             local keyText = BindPadCore.GetBindingText(keyPressed, "KEY_")
-            local text = format(L.TEXT_CONFIRM_BINDING, keyText, oldAction, keyText, padSlot.action)
+            local text = format(
+                L.TEXT_CONFIRM_BINDING,
+                keyText,
+                GetBindingLabel(oldAction),
+                keyText,
+                GetBindingLabel(padSlot.action)
+            )
             answer = BindPadCore.ShowDialog(text)
         else
             answer = true
@@ -555,7 +633,12 @@ function BindPadSlot_OnClick(self, button, down)
         if BindPadCore.CursorHasIcon() then
             BindPadCore.ClearCursor()
         else
-            BindPadMacroFrame_Open(self)
+            local padSlot = BindPadCore.GetSlotInfo(self:GetID())
+            if padSlot and TYPE_BPMACRO ~= padSlot.type then
+                BindPadCore.ShowSlotMenu(self, padSlot)
+            else
+                BindPadMacroFrame_Open(self)
+            end
         end
 
         return
@@ -642,6 +725,11 @@ function BindPadSlot_OnEnter(self)
     elseif TYPE_SPELL == padSlot.type then
         if padSlot.spellid then
             GameTooltip:SetSpellByID(padSlot.spellid)
+            if IsRankPinned(padSlot) then
+                GameTooltip:AddLine(format(L.TOOLTIP_RANK_PINNED, padSlot.rank), 1.0, 0.82, 0.0)
+            elseif GetSpellRankText(padSlot.spellid) then
+                GameTooltip:AddLine(L.TOOLTIP_RANK_HIGHEST, 1.0, 0.82, 0.0)
+            end
         else
             local spellBookId = BindPadCore.FindSpellBookIdByName(padSlot.name, padSlot.rank, padSlot.bookType)
             if spellBookId then
@@ -684,6 +772,7 @@ function BindPadSlot_UpdateState(self)
     if padSlot and padSlot.type and padSlot.action then
         self.icon:SetTexture(padSlot.texture)
         self.icon:Show()
+        self.SlotArt:Hide()
         self.addbutton:Hide()
 
         self.name:SetText(padSlot.name or "")
@@ -695,6 +784,12 @@ function BindPadSlot_UpdateState(self)
             self.hotkey:SetText("")
         end
 
+        if IsRankPinned(padSlot) then
+            self.rank:SetFormattedText(L.TEXT_RANK_SHORT, padSlot.rank:match("%d+") or padSlot.rank)
+        else
+            self.rank:SetText("")
+        end
+
         if TYPE_BPMACRO == padSlot.type then
             self.border:SetVertexColor(0, 1.0, 0, 0.35)
             self.border:Show()
@@ -703,9 +798,11 @@ function BindPadSlot_UpdateState(self)
         end
     else
         self.icon:Hide()
+        self.SlotArt:Show()
         self.addbutton:Show()
         self.name:SetText("")
         self.hotkey:SetText("")
+        self.rank:SetText("")
         self.border:Hide()
     end
 end
@@ -726,14 +823,87 @@ function BindPadMacroPopupFrame_Open(self)
     BindPadMacroPopupFrame:Show()
 end
 
-function BindPadMacroAddButton_OnClick(self)
-    if BindPadCore.CursorHasIcon() then
+function BindPadMacroAddButton_OnClick(self, button)
+    if button == "RightButton" and BindPadCore.CursorHasIcon() then
+        BindPadCore.ClearCursor()
+    elseif BindPadCore.CursorHasIcon() then
         BindPadSlot_OnReceiveDrag(self)
     else
         BindPadCore.HideSubFrames()
         PlaySound(SOUNDKIT.GS_TITLE_OPTION_OK)
         BindPadMacroPopupFrame_Open(self)
     end
+end
+
+-- Every rank of a player spell the character knows, highest first.
+function BindPadCore.GetSpellRanks(spellName)
+    local ranks, seen = {}, {}
+    local bank = Enum.SpellBookSpellBank.Player
+    for i = 1, GetNumPlayerSpells() do
+        local itemType, spellID = C_SpellBook.GetSpellBookItemType(i, bank)
+        if itemType == Enum.SpellBookItemType.Spell and not seen[spellID] and GetSpellName(spellID) == spellName then
+            seen[spellID] = true
+            local rank = GetSpellRankText(spellID)
+            if rank then
+                table.insert(ranks, { spellID = spellID, rank = rank, number = tonumber(rank:match("%d+")) })
+            end
+        end
+    end
+    table.sort(ranks, function(a, b)
+        return a.number > b.number
+    end)
+    return ranks
+end
+
+-- Pins a spell slot to one rank, or (rank nil) lets it follow the highest rank. Its key binding moves along.
+function BindPadCore.SetSlotRank(button, spellID, rank)
+    if InCombatLockdown() then
+        BindPadFrame_OutputText(L.TEXT_ERR_RANK_INCOMBAT)
+        return
+    end
+    local padSlot = BindPadCore.GetSlotInfo(button:GetID())
+    if padSlot == nil or TYPE_SPELL ~= padSlot.type then
+        return
+    end
+    padSlot.spellid = spellID
+    padSlot.rank = rank
+    BindPadCore.UpdateMacroText(padSlot)
+    BindPadSlot_UpdateState(button)
+end
+
+function BindPadCore.ShowSlotMenu(button, padSlot)
+    MenuUtil.CreateContextMenu(button, function(owner, rootDescription)
+        rootDescription:CreateTitle(padSlot.name)
+
+        local ranks = TYPE_SPELL == padSlot.type
+                and padSlot.bookType ~= BOOKTYPE_PET
+                and BindPadCore.GetSpellRanks(padSlot.name)
+            or {}
+        if #ranks > 1 or IsRankPinned(padSlot) then
+            rootDescription:CreateDivider()
+            rootDescription:CreateTitle(L.TEXT_SPELL_RANK)
+            local highest = rootDescription:CreateRadio(L.TEXT_HIGHEST_RANK, function()
+                return not IsRankPinned(padSlot)
+            end, function()
+                BindPadCore.SetSlotRank(button, ranks[1] and ranks[1].spellID or padSlot.spellid, nil)
+            end)
+            highest:SetTooltip(function(tooltip)
+                GameTooltip_SetTitle(tooltip, L.TOOLTIP_RANK_HIGHEST)
+            end)
+            for _, info in ipairs(ranks) do
+                rootDescription:CreateRadio(info.rank, function()
+                    return IsRankPinned(padSlot) and padSlot.spellid == info.spellID
+                end, function()
+                    BindPadCore.SetSlotRank(button, info.spellID, info.rank)
+                end)
+            end
+        end
+
+        rootDescription:CreateDivider()
+        rootDescription:CreateButton(L.TEXT_CONVERT, function()
+            BindPadMacroFrame_Open(button)
+        end)
+    end)
 end
 
 -- Name and icon picker for BindPad Macros, built on Blizzard's shared macro icon selector.
@@ -851,6 +1021,8 @@ function BindPadMacroFrame_Open(self)
 
     BindPadMacroFrameSlotName:SetText(padSlot.name)
     BindPadMacroFrameSlotButtonIcon:SetTexture(padSlot.texture)
+    BindPadMacroFrameSlotButtonIcon:Show()
+    BindPadMacroFrameSlotButton.SlotArt:Hide()
     BindPadMacroFrameText:SetText(padSlot.macrotext)
     BindPadMacroFrameText:SetMaxBytes(1024)
 
@@ -902,10 +1074,11 @@ function BindPadMacroFrame_OnHide(self)
 end
 
 function BindPadProfileTab_OnShow(self)
-    local normalTexture = self:GetNormalTexture()
     local spec1, spec2, spec3, spec4 = BindPadCore.GetSpecsForProfile(self:GetID())
     local texture = BindPadCore.GetSpecTexture(spec1)
-    normalTexture:SetTexture(texture)
+    -- A profile no talent group uses yet shows its number instead of an icon.
+    self.Icon:SetTexture(texture)
+    self.Number:SetText(texture == nil and self:GetID() or "")
 
     if spec2 then
         texture = BindPadCore.GetSpecTexture(spec2)
@@ -931,12 +1104,13 @@ function BindPadProfileTab_OnShow(self)
         self.subIcon3:Hide()
     end
 
-    if BindPadCore.GetCurrentProfileNum() == self:GetID() then
-        self:SetChecked(true)
-    end
+    self:SetChecked(BindPadCore.GetCurrentProfileNum() == self:GetID())
 end
 
-function BindPadProfileTab_OnClick(self, button, down)
+function BindPadProfileTab_OnClick(self, button, upInside)
+    if button ~= "LeftButton" or not upInside then
+        return
+    end
     if BindPadVars.tab == 1 and self:GetID() ~= BindPadCore.GetCurrentProfileNum() then
         BindPadFrameTab_OnClick(BindPadFrameTab2)
     end
@@ -1025,7 +1199,8 @@ function BindPadCore.PlaceIntoSlot(id, type, detail, subdetail, spellid)
         local spellName, texture = GetSpellNameAndIcon(spellid)
         padSlot.bookType = NormalizeBookType(subdetail)
         padSlot.name = spellName
-        padSlot.rank = nil
+        -- A lower rank stays pinned to that rank; the highest rank follows new ranks as they are learned.
+        padSlot.rank = spellid and IsLowRankSpell(spellid) and GetSpellRankText(spellid) or nil
         padSlot.spellid = spellid
         padSlot.texture = texture
     elseif type == "petaction" then
@@ -1406,18 +1581,15 @@ function BindPadFrame_ChangeBindingProfile()
     if GetCurrentBindingSet() == 1 then
         LoadBindings(2)
         BindPadCore.SaveBindings(2)
-        BindPadFrameCharacterButton:SetChecked(true)
     else
         local function f()
             local answer1 = BindPadCore.ShowDialog(CONFIRM_DELETING_CHARACTER_SPECIFIC_BINDINGS)
             if not answer1 then
-                BindPadFrameCharacterButton:SetChecked(GetCurrentBindingSet() == 2)
                 return
             end
 
             local answer2 = BindPadCore.ShowDialog(L.TEXT_ARE_YOU_SURE)
             if not answer2 then
-                BindPadFrameCharacterButton:SetChecked(GetCurrentBindingSet() == 2)
                 return
             end
 
@@ -1528,6 +1700,11 @@ function BindPadCore.InitProfile()
     BindPadMacro:SetAttribute("*type*", "macro")
     BindPadKey:SetAttribute("*checkselfcast*", true)
     BindPadKey:SetAttribute("*checkfocuscast*", true)
+    BindPadRank:SetAttribute("*checkselfcast*", true)
+    BindPadRank:SetAttribute("*checkfocuscast*", true)
+    -- /click sends an up-click whatever the cast-on-key-down setting is.
+    BindPadRank:SetAttribute("useOnKeyDown", false)
+    BindPadRank:RegisterForClicks("AnyUp")
 
     BindPadCore.SetTriggerOnKeydown()
 
@@ -1548,14 +1725,17 @@ function BindPadCore.UpdateMacroText(padSlot)
         BindPadKey:SetAttribute("*type-ITEM " .. padSlot.name, "item")
         BindPadKey:SetAttribute("*item-ITEM " .. padSlot.name, padSlot.name)
     elseif TYPE_SPELL == padSlot.type then
-        local spellName = padSlot.name
-        BindPadKey:SetAttribute("*type-SPELL " .. spellName, "spell")
-        BindPadKey:SetAttribute("*spell-SPELL " .. spellName, spellName)
+        local command = GetSpellSlotCommand(padSlot)
+        BindPadKey:SetAttribute("*type-" .. command, "spell")
+        BindPadKey:SetAttribute("*spell-" .. command, IsRankPinned(padSlot) and padSlot.spellid or padSlot.name)
     elseif TYPE_MACRO == padSlot.type then
         BindPadKey:SetAttribute("*type-MACRO " .. padSlot.name, "macro")
         BindPadKey:SetAttribute("*macro-MACRO " .. padSlot.name, padSlot.name)
     elseif TYPE_BPMACRO == padSlot.type then
         BindPadMacro:SetAttribute("*macrotext-" .. padSlot.name, padSlot.macrotext)
+        for spellID in padSlot.macrotext:gmatch("BindPadRank (%d+)") do
+            BindPadCore.SetRankProxy(spellID)
+        end
     else
         return
     end
@@ -1604,6 +1784,12 @@ function BindPadCore.DeleteBindPadMacroID(padSlot)
     BindPadMacro:SetAttribute("*macrotext-" .. padSlot.name, nil)
 end
 
+-- Macros can't /cast a lower rank by name, so they /click BindPadRank with the rank's spell ID as the button.
+function BindPadCore.SetRankProxy(spellID)
+    BindPadRank:SetAttribute("*type-" .. spellID, "spell")
+    BindPadRank:SetAttribute("*spell-" .. spellID, tonumber(spellID))
+end
+
 function BindPadCore.UpdateCursor()
     local drag = BindPadCore.drag
     if GetCursorInfo() then
@@ -1626,7 +1812,7 @@ function BindPadCore.CreateBindPadMacroAction(padSlot)
     if TYPE_ITEM == padSlot.type then
         return "CLICK BindPadKey:ITEM " .. padSlot.name
     elseif TYPE_SPELL == padSlot.type then
-        return "CLICK BindPadKey:SPELL " .. padSlot.name
+        return "CLICK BindPadKey:" .. GetSpellSlotCommand(padSlot)
     elseif TYPE_MACRO == padSlot.type then
         return "CLICK BindPadKey:MACRO " .. padSlot.name
     elseif TYPE_BPMACRO == padSlot.type then
@@ -1643,7 +1829,11 @@ function BindPadCore.ConvertToBindPadMacro()
         padSlot.linktext = nil
         padSlot.macrotext = SLASH_USE1 .. " [mod:SELFCAST,@player][mod:FOCUSCAST,@focus][] " .. padSlot.name
     elseif TYPE_SPELL == padSlot.type then
-        padSlot.macrotext = SLASH_CAST1 .. " [mod:SELFCAST,@player][mod:FOCUSCAST,@focus][] " .. padSlot.name
+        if IsRankPinned(padSlot) then
+            padSlot.macrotext = SLASH_CLICK1 .. " BindPadRank " .. padSlot.spellid
+        else
+            padSlot.macrotext = SLASH_CAST1 .. " [mod:SELFCAST,@player][mod:FOCUSCAST,@focus][] " .. padSlot.name
+        end
         padSlot.type = TYPE_BPMACRO
         padSlot.bookType = nil
         padSlot.rank = nil
@@ -1792,13 +1982,13 @@ function BindPadCore.DuplicateTable(table)
     return newtable
 end
 
-function BindPadFrame_SaveAllKeysToggle(self)
-    BindPadVars.saveAllKeysFlag = (not not self:GetChecked())
+function BindPadFrame_SaveAllKeysToggle()
+    BindPadVars.saveAllKeysFlag = not BindPadVars.saveAllKeysFlag
     BindPadCore.DoSaveAllKeys()
 end
 
-function BindPadFrame_ShowHotkeyToggle(self)
-    BindPadVars.showHotkey = (not not self:GetChecked())
+function BindPadFrame_ShowHotkeyToggle()
+    BindPadVars.showHotkey = not BindPadVars.showHotkey
     BindPadCore.UpdateAllHotkeys()
 end
 
@@ -1937,45 +2127,69 @@ function BindPadCore.DoRestoreAllKeys()
     end
 end
 
-function BindPadCore.InsertBindingTooltip(action)
-    if not BindPadVars.showHotkey then
-        return
-    end
-
-    if action then
-        local key = BindPadCore.GetBindingKeyFromAction(action)
-        if not key then
-            action = BindPadCore.GetBaseForMorphingSpell(action)
-            key = BindPadCore.GetBindingKeyFromAction(action)
-        end
-        if key then
-            GameTooltip:AddLine(L.TOOLTIP_KEYBINDING .. BindPadCore.GetBindingText(key, "KEY_"), 0.8, 0.8, 1.0)
-            GameTooltip:Show()
-        end
+function BindPadCore.InsertBindingTooltip(key)
+    if BindPadVars.showHotkey and key then
+        GameTooltip:AddLine(L.TOOLTIP_KEYBINDING .. BindPadCore.GetBindingText(key, "KEY_"), 0.8, 0.8, 1.0)
+        GameTooltip:Show()
     end
 end
 
+-- The key of a BindPad action, also trying the base spell when action is a morphed spell.
+function BindPadCore.FindKeyForAction(action)
+    if not action then
+        return nil
+    end
+    return BindPadCore.GetBindingKeyFromAction(action)
+        or BindPadCore.GetBindingKeyFromAction(BindPadCore.GetBaseForMorphingSpell(action))
+end
+
+-- The key that casts this exact spell: a slot pinned to its rank, or, unless it is a lower rank, a slot casting the spell by name.
+function BindPadCore.FindSpellKey(spellID)
+    if spellID == nil or issecretvalue(spellID) then
+        return nil
+    end
+    local spellName = GetSpellName(spellID)
+    if not spellName then
+        return nil
+    end
+    local rank = GetSpellRankText(spellID)
+    if rank then
+        local key = BindPadCore.GetBindingKeyFromAction(GetRankedSpellCommand(spellName, rank))
+        if key or IsLowRankSpell(spellID) then
+            return key
+        end
+    end
+    return BindPadCore.FindKeyForAction("SPELL " .. spellName)
+end
+
 function BindPadCore.GameTooltipSetItemByID(self, itemID)
-    BindPadCore.InsertBindingTooltip(concat("ITEM ", GetItemInfo(itemID)))
+    BindPadCore.InsertBindingTooltip(BindPadCore.FindKeyForAction(concat("ITEM ", GetItemInfo(itemID))))
 end
 
 function BindPadCore.GameTooltipSetBagItem(self, bag, slot)
     local itemID = C_Container.GetContainerItemID(bag, slot)
     if itemID then
-        BindPadCore.InsertBindingTooltip(concat("ITEM ", GetItemInfo(itemID)))
+        BindPadCore.InsertBindingTooltip(BindPadCore.FindKeyForAction(concat("ITEM ", GetItemInfo(itemID))))
     end
 end
 
 function BindPadCore.GameTooltipSetSpellByID(self, spellID)
-    BindPadCore.InsertBindingTooltip(concat("SPELL ", GetSpellName(spellID)))
+    BindPadCore.InsertBindingTooltip(BindPadCore.FindSpellKey(spellID))
 end
 
 function BindPadCore.GameTooltipSetSpellBookItem(self, slot, bookType)
-    BindPadCore.InsertBindingTooltip(concat("SPELL ", GetSpellBookName(slot, bookType)))
+    local isSpell, spellID = GetSpellBookSpell(slot, bookType)
+    if isSpell then
+        BindPadCore.InsertBindingTooltip(BindPadCore.FindSpellKey(spellID))
+    else
+        BindPadCore.InsertBindingTooltip(
+            BindPadCore.FindKeyForAction(concat("SPELL ", GetSpellBookName(slot, bookType)))
+        )
+    end
 end
 
 function BindPadCore.GameTooltipSetAction(self, slot)
-    BindPadCore.InsertBindingTooltip(BindPadCore.GetActionCommand(slot))
+    BindPadCore.InsertBindingTooltip(BindPadCore.GetActionKey(slot))
 end
 
 for method, handler in pairs({
@@ -1987,7 +2201,9 @@ for method, handler in pairs({
 }) do
     if GameTooltip[method] then
         hooksecurefunc(GameTooltip, method, function(...)
-            return BindPadCore[handler](...)
+            if BindPadVars.showHotkey then
+                return BindPadCore[handler](...)
+            end
         end)
     end
 end
@@ -1997,7 +2213,7 @@ function BindPadCore.ShowDialog(text)
 
     local dialog = BindPadDialogFrame
     dialog.text:SetText(text)
-    local height = 32 + dialog.text:GetHeight() + 8 + dialog.okaybutton:GetHeight()
+    local height = 22 + dialog.text:GetHeight() + 16 + dialog.okaybutton:GetHeight() + 18
     dialog:SetHeight(height)
 
     local co = coroutine.running()
@@ -2124,27 +2340,20 @@ function BindPadCore.OverwriteHotKey(info)
             -- Action slots can be secret in combat on the modern client; keep the current text.
             return
         end
-        local action = BindPadCore.GetActionCommand(actionSlot)
-        if action then
-            local key = BindPadCore.GetBindingKeyFromAction(action)
-            if not key then
-                action = BindPadCore.GetBaseForMorphingSpell(action)
-                key = BindPadCore.GetBindingKeyFromAction(action)
+        local key = BindPadCore.GetActionKey(actionSlot)
+        if key then
+            -- BindPad's ShowHotKey
+            local font, size, flags = info.hotkey:GetFont()
+            if font then
+                info.bphotkey:SetFont(font, size, flags)
             end
-            if key then
-                -- BindPad's ShowHotKey
-                local font, size, flags = info.hotkey:GetFont()
-                if font then
-                    info.bphotkey:SetFont(font, size, flags)
-                end
-                info.bphotkey:SetTextColor(info.hotkey:GetTextColor())
-                info.bphotkey:SetText(BindPadCore.GetBindingText(key, "KEY_", 1))
-                info.bphotkey:SetAlpha(1)
+            info.bphotkey:SetTextColor(info.hotkey:GetTextColor())
+            info.bphotkey:SetText(BindPadCore.GetBindingText(key, "KEY_", 1))
+            info.bphotkey:SetAlpha(1)
 
-                -- Making original hotkey transparent.
-                info.hotkey:SetAlpha(0)
-                return
-            end
+            -- Making original hotkey transparent.
+            info.hotkey:SetAlpha(0)
+            return
         end
     end
 
@@ -2153,7 +2362,7 @@ function BindPadCore.OverwriteHotKey(info)
     info.hotkey:SetAlpha(1)
 end
 
-function BindPadCore.GetActionCommand(actionSlot)
+function BindPadCore.GetActionKey(actionSlot)
     if not actionSlot then
         return nil
     end
@@ -2162,14 +2371,13 @@ function BindPadCore.GetActionCommand(actionSlot)
         return nil
     end
     if type == "spell" then
-        return concat("SPELL ", GetSpellName(id))
+        return BindPadCore.FindSpellKey(id)
     elseif type == "item" then
-        return concat("ITEM ", GetItemInfo(id))
+        return BindPadCore.FindKeyForAction(concat("ITEM ", GetItemInfo(id)))
     elseif type == "macro" then
-        return concat("MACRO ", GetMacroInfo(id))
-    else
-        return nil
+        return BindPadCore.FindKeyForAction(concat("MACRO ", GetMacroInfo(id)))
     end
+    return nil
 end
 
 function BindPadCore.CreateFrameHook(frameType, frameName, parentFrame, inheritsFrame, id)
@@ -2202,9 +2410,13 @@ end
 hooksecurefunc("CreateFrame", BindPadCore.CreateFrameHook)
 
 BindPadCore.useBindPadSlot = 0
-function BindPadCore.CreateBindPadSlot(usenum)
-    local NUM_SLOTS_PER_ROW = 6
+local NUM_SLOTS_PER_ROW = 6
+local SLOT_SIZE = 42
+local SLOT_SPACING = 10
+local SLOT_LEFT = 1
+local SLOT_TOP = 4
 
+function BindPadCore.CreateBindPadSlot(usenum)
     for i = min(usenum + 1, BindPadCore.useBindPadSlot + 1), max(usenum, BindPadCore.useBindPadSlot) do
         local button = _G["BindPadSlot" .. i]
         if button == nil then
@@ -2212,13 +2424,15 @@ function BindPadCore.CreateBindPadSlot(usenum)
                 CreateFrame("CheckButton", "BindPadSlot" .. i, BindPadSlotButtonContainer, "BindPadSlotTemplate", i)
         end
         if i <= usenum then
-            if i == 1 then
-                button:SetPoint("TOPLEFT", BindPadSlotButtonContainer, "TOPLEFT", 6, -6)
-            elseif mod(i, NUM_SLOTS_PER_ROW) == 1 then
-                button:SetPoint("TOP", "BindPadSlot" .. (i - NUM_SLOTS_PER_ROW), "BOTTOM", 0, -10)
-            else
-                button:SetPoint("LEFT", "BindPadSlot" .. (i - 1), "RIGHT", 13, 0)
-            end
+            local row, column = floor((i - 1) / NUM_SLOTS_PER_ROW), (i - 1) % NUM_SLOTS_PER_ROW
+            button:ClearAllPoints()
+            button:SetPoint(
+                "TOPLEFT",
+                BindPadSlotButtonContainer,
+                "TOPLEFT",
+                SLOT_LEFT + column * (SLOT_SIZE + SLOT_SPACING),
+                -(SLOT_TOP + row * (SLOT_SIZE + SLOT_SPACING))
+            )
             button:Enable()
             button:Show()
         else
@@ -2228,13 +2442,9 @@ function BindPadCore.CreateBindPadSlot(usenum)
         end
     end
 
-    BindPadScrollFrameFooter:SetPoint(
-        "TOPLEFT",
-        "BindPadSlot" .. (floor((usenum - 1) / NUM_SLOTS_PER_ROW) * NUM_SLOTS_PER_ROW + 1),
-        "BOTTOMLEFT",
-        0,
-        0
-    )
+    -- The scroll range comes from the scroll child's height.
+    local rows = math.ceil(usenum / NUM_SLOTS_PER_ROW)
+    BindPadSlotButtonContainer:SetHeight(SLOT_TOP * 2 + rows * SLOT_SIZE + (rows - 1) * SLOT_SPACING)
 
     BindPadCore.useBindPadSlot = usenum
     BindPadScrollFrameNumber:SetFormattedText(L.TEXT_SLOTS_SHOWN, usenum)
