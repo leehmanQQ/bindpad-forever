@@ -112,6 +112,7 @@ read_globals = {
     "ClearCursor",
     "CreateFrame",
     "GetActionInfo",
+    "GetActionText",
     "GetBinding",
     "GetBindingAction",
     "GetBindingFromClick",

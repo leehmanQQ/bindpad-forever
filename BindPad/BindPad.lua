@@ -351,6 +351,7 @@ function BindPadFrame_OnLoad(self)
     self:RegisterEvent("ACTIONBAR_PAGE_CHANGED")
     self:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
     self:RegisterEvent("UPDATE_POSSESS_BAR")
+    self:RegisterEvent("UPDATE_MACROS")
 
     self:RegisterEvent("PLAYER_TALENT_UPDATE")
     self:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED")
@@ -387,6 +388,7 @@ function BindPadFrame_OnEvent(self, event, ...)
         or event == "ACTIONBAR_PAGE_CHANGED"
         or event == "UPDATE_SHAPESHIFT_FORM"
         or event == "UPDATE_POSSESS_BAR"
+        or event == "UPDATE_MACROS"
     then
         BindPadCore.UpdateAllHotkeys()
     elseif event == "PLAYER_ENTERING_WORLD" then
@@ -2375,7 +2377,13 @@ function BindPadCore.GetActionKey(actionSlot)
     elseif type == "item" then
         return BindPadCore.FindKeyForAction(concat("ITEM ", GetItemInfo(id)))
     elseif type == "macro" then
-        return BindPadCore.FindKeyForAction(concat("MACRO ", GetMacroInfo(id)))
+        -- The modern client reports the macro's current spell/item ID here instead of its macro index,
+        -- so look the macro up by name via GetActionText.
+        local name = GetActionText(actionSlot)
+        if name == nil or issecretvalue(name) then
+            name = GetMacroInfo(id)
+        end
+        return BindPadCore.FindKeyForAction(concat("MACRO ", name))
     end
     return nil
 end
