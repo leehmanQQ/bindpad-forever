@@ -50,6 +50,9 @@ local L = {
     TEXT_ERR_BINDPADMACRO_INCOMBAT = "Cannot edit BindPadMacro while in combat.",
     TEXT_ERR_RANK_INCOMBAT = "Cannot change spell rank while in combat.",
     TEXT_CREATE_PROFILETAB = "Created new profile.  All icons are duplicated now.",
+    TEXT_NOTICE_PROFILE_SPLIT = "Your characters with the first name %s used to share one profile, so their character tabs and character key bindings were mixed up. Each character now has its own profile, and this one starts with a copy of the shared one: remove the slots and key bindings that belong to your other %s characters. Characters with that first name that log in within %d days get their copy too.",
+    TEXT_NOTICE_GENERAL_RESTORED = 'Restored %d "for all characters" key binding(s) that an earlier version lost when a character without them logged in.',
+    TEXT_NOTICE_FOREIGN_REMOVED = "Removed %d key binding(s) that another character's character tabs had left on this character.",
     TEXT_SLOTS_SHOWN = "%d Slots shown",
     TEXT_USAGE = "Usage: /bindpad [command] or /bp [command] \n"
         .. "    /bindpad : Toggle BindPadFrame.\n"

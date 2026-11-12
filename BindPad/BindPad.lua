@@ -144,7 +144,7 @@ UIPanelWindows["BindPadMacroFrame"] = { area = "left", pushable = 9, whileDead =
 local BINDPAD_MAXSLOTS_DEFAULT = 42
 local BINDPAD_MAXPROFILETAB = 5
 local BINDPAD_GENERAL_TAB = 1
-local BINDPAD_SAVEFILE_VERSION = 1.3
+local BINDPAD_SAVEFILE_VERSION = 1.4
 
 local TYPE_ITEM = "ITEM"
 local TYPE_SPELL = "SPELL"
@@ -985,6 +985,8 @@ function BindPadMacroPopupMixin:OkayButton_OnClick()
     else
         padSlot.type = TYPE_BPMACRO
         padSlot.macrotext = ""
+        -- A new General slot shares its key with every character unless the player opts out.
+        padSlot.isForAllCharacters = (BindPadVars.tab or 1) == BINDPAD_GENERAL_TAB or nil
     end
     padSlot.name = BindPadCore.NewBindPadMacroName(padSlot, name)
     if padSlot.name ~= name then
@@ -1279,14 +1281,8 @@ function BindPadCore.PlaceIntoSlot(id, type, detail, subdetail, spellid)
     end
 
     padSlot.action = BindPadCore.CreateBindPadMacroAction(padSlot)
-    if (BindPadVars.tab or 1) == 1 then
-        local key = GetBindingKey(padSlot.action)
-        if key then
-            if BindPadVars.GeneralKeyBindings[key] == padSlot.action then
-                padSlot.isForAllCharacters = true
-            end
-        end
-    end
+    -- General slots are shared by every character, so their key is too unless the player opts out.
+    padSlot.isForAllCharacters = (BindPadVars.tab or 1) == BINDPAD_GENERAL_TAB or nil
     BindPadCore.UpdateMacroText(padSlot)
 end
 
@@ -1666,6 +1662,24 @@ function BindPadCore.PickupSpellBookItemHook(slot, bookType)
 end
 hooksecurefunc(C_SpellBook, "PickupSpellBookItem", BindPadCore.PickupSpellBookItemHook)
 
+-- Messages about changes BindPad made to this character's setup (migrations, cleanups).
+-- Shown a few seconds after they're raised, so they don't get lost among the login messages.
+local NOTICE_DELAY_SECONDS = 5
+BindPadCore.notices = {}
+
+function BindPadCore.Notify(text)
+    local notices = BindPadCore.notices
+    notices[#notices + 1] = text
+    if #notices == 1 then
+        C_Timer.After(NOTICE_DELAY_SECONDS, function()
+            for _, notice in ipairs(notices) do
+                BindPadFrame_OutputText(notice)
+            end
+            table.wipe(notices)
+        end)
+    end
+end
+
 function BindPadCore.InitBindPadOnce(event)
     if not BindPadCore.initialized then
         BindPadCore.initialized = true
@@ -1679,8 +1693,67 @@ function BindPadCore.InitBindPadOnce(event)
     end
 end
 
+-- How long a pre-1.4 profile shared by same-first-name characters is handed out before it's deleted.
+local LEGACY_PROFILE_SECONDS = 30 * 24 * 60 * 60
+
+-- The ruleset the character plays on, which (with the full name) makes a character unique on
+-- servers with regional unique names. Same naming as other addons use (e.g. Syndicator).
+local function GetRulesetName()
+    local function Active(rule)
+        return rule ~= nil and C_GameRules.IsGameRuleActive(rule)
+    end
+    local rules = Enum.GameRule
+    local pvp, rp = Active(rules.PvPRuleset), Active(rules.RPRuleset)
+    if pvp and rp then
+        return "RPPvP"
+    elseif pvp then
+        return "PvP"
+    elseif rp then
+        return "RP"
+    elseif Active(rules.HardcoreRuleset) then
+        return "HC"
+    end
+    return "PvE"
+end
+
+-- Before 1.4, characters sharing a first name all used one "PROFILE_<realm>_<first name>" profile.
+-- Each of them gets a copy (nobody knows whose it was) until the old profile is retired.
+function BindPadCore.MigrateLegacyProfile(legacyKey, key, firstName)
+    local legacy = BindPadVars[legacyKey]
+    if type(legacy) ~= "table" then
+        return
+    end
+    legacy.retireAt = legacy.retireAt or (time() + LEGACY_PROFILE_SECONDS)
+    if time() >= legacy.retireAt then
+        BindPadVars[legacyKey] = nil
+        return
+    end
+    if BindPadVars[key] == nil then
+        BindPadVars[key] = BindPadCore.DuplicateTable(legacy)
+        BindPadVars[key].retireAt = nil
+        local daysLeft = math.ceil((legacy.retireAt - time()) / (24 * 60 * 60))
+        BindPadCore.Notify(format(L.TEXT_NOTICE_PROFILE_SPLIT, firstName, firstName, daysLeft))
+    end
+end
+
+-- The SavedVariables key of this character's profile: "PROFILE_<realm>_<name>", or on servers with
+-- regional unique names (no realms, "Firstname Lastname" names), "PROFILE_<ruleset>_<first> <last>".
+function BindPadCore.GetCharacterKey()
+    local name, surname = UnitName("player")
+    local legacyKey = "PROFILE_" .. GetRealmName() .. "_" .. name
+    if not (RegionalUniqueNamesEnabled and RegionalUniqueNamesEnabled() and surname and C_GameRules) then
+        return legacyKey
+    end
+
+    local separators = Constants and Constants.CharacterNameSeparatorConsts
+    local separator = separators and separators.CHARACTERNAME_SURNAME_SEPARATOR or " "
+    local key = "PROFILE_" .. GetRulesetName() .. "_" .. name .. separator .. surname
+    BindPadCore.MigrateLegacyProfile(legacyKey, key, name)
+    return key
+end
+
 function BindPadCore.InitProfile()
-    BindPadCore.character = "PROFILE_" .. GetRealmName() .. "_" .. UnitName("player")
+    BindPadCore.character = BindPadCore.GetCharacterKey()
     local character = BindPadCore.character
 
     if not BindPadVars[character] then
@@ -1691,6 +1764,11 @@ function BindPadCore.InitProfile()
 
     if not BindPadVars[character].profileForTalentGroup then
         BindPadVars[character].profileForTalentGroup = {}
+    end
+
+    -- Runs once per account, before SwitchProfile carries the general bindings over.
+    if (tonumber(BindPadVars.version) or 0) < 1.4 then
+        BindPadCore.RecoverGeneralKeyBindings()
     end
 
     local newActiveTalentGroup = GetSpecialization()
@@ -1960,6 +2038,7 @@ function BindPadCore.DoCopyFrom(arg)
                 BindPadVars[backupname] = BindPadVars[BindPadCore.character]
             end
             BindPadVars[BindPadCore.character] = BindPadCore.DuplicateTable(BindPadVars[name])
+            BindPadVars[BindPadCore.character].retireAt = nil
             BindPadCore.InitProfile()
 
             if BindPadFrame:IsShown() then
@@ -1994,6 +2073,109 @@ function BindPadFrame_ShowHotkeyToggle()
     BindPadCore.UpdateAllHotkeys()
 end
 
+-- Adds the actions of all character specific slots in charData (a BindPadVars["PROFILE_..."] table) to set.
+local function CollectCharacterActions(charData, set)
+    for profileNum = 1, BINDPAD_MAXPROFILETAB do
+        local profile = charData[profileNum]
+        if type(profile) == "table" then
+            for tab = 1, 3 do
+                local tabInfo = profile["CharacterSpecificTab" .. tab]
+                if type(tabInfo) == "table" then
+                    for _, padSlot in pairs(tabInfo) do
+                        if type(padSlot) == "table" and padSlot.action then
+                            set[padSlot.action] = true
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
+-- Actions that only other characters have slots for. A binding for one of these in the
+-- game's binding set was left there by another character and doesn't belong to this one.
+function BindPadCore.GetForeignActions()
+    local own = {}
+    for padSlot in BindPadCore.AllSlotInfoIter() do
+        own[padSlot.action] = true
+    end
+    local foreign = {}
+    for name, charData in pairs(BindPadVars) do
+        if type(charData) == "table" and type(name) == "string" and strfind(name, "^PROFILE_") then
+            CollectCharacterActions(charData, name == BindPadCore.character and own or foreign)
+        end
+    end
+    for action in pairs(own) do
+        foreign[action] = nil
+    end
+    return foreign
+end
+
+-- Before 1.4, DoSaveAllKeys wiped GeneralKeyBindings whenever the current character's binding set
+-- lacked them, losing them for every character. Each character's profiles still hold the keys,
+-- so rebuild the missing entries from the key most profiles agree on.
+function BindPadCore.RecoverGeneralKeyBindings()
+    if BindPadVars.GeneralKeyBindings == nil then
+        BindPadVars.GeneralKeyBindings = {}
+    end
+    local general = BindPadVars.GeneralKeyBindings
+
+    local present = {}
+    for _, action in pairs(general) do
+        present[action] = true
+    end
+    local missing, anyMissing = {}, false
+    for id = 1, BindPadVars.numSlot or BINDPAD_MAXSLOTS_DEFAULT do
+        local padSlot = BindPadVars[id]
+        if
+            type(padSlot) == "table"
+            and padSlot.isForAllCharacters
+            and padSlot.action
+            and not present[padSlot.action]
+        then
+            missing[padSlot.action] = true
+            anyMissing = true
+        end
+    end
+    if not anyMissing then
+        return
+    end
+
+    local votes = {}
+    for name, charData in pairs(BindPadVars) do
+        if type(charData) == "table" and type(name) == "string" and strfind(name, "^PROFILE_") then
+            for profileNum = 1, BINDPAD_MAXPROFILETAB do
+                local profile = charData[profileNum]
+                if type(profile) == "table" and type(profile.AllKeyBindings) == "table" then
+                    for key, action in pairs(profile.AllKeyBindings) do
+                        if missing[action] then
+                            votes[action] = votes[action] or {}
+                            votes[action][key] = (votes[action][key] or 0) + 1
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    local restored = 0
+    for action, keys in pairs(votes) do
+        local bestKey, bestCount
+        for key, n in pairs(keys) do
+            if not general[key] and (bestCount == nil or n > bestCount or (n == bestCount and key < bestKey)) then
+                bestKey, bestCount = key, n
+            end
+        end
+        if bestKey then
+            general[bestKey] = action
+            restored = restored + 1
+        end
+    end
+    if restored > 0 then
+        BindPadCore.Notify(format(L.TEXT_NOTICE_GENERAL_RESTORED, restored))
+    end
+end
+
 function BindPadCore.DoSaveAllKeys()
     if BindPadCore.ChangingKeyBindings then
         return
@@ -2010,17 +2192,33 @@ function BindPadCore.DoSaveAllKeys()
     end
     if BindPadVars.GeneralKeyBindings == nil then
         BindPadVars.GeneralKeyBindings = {}
-    else
-        table.wipe(BindPadVars.GeneralKeyBindings)
     end
+    local general = BindPadVars.GeneralKeyBindings
+
+    local generalActions = {}
+    for padSlot in BindPadCore.AllSlotInfoIter() do
+        if padSlot.isForAllCharacters then
+            generalActions[padSlot.action] = true
+        end
+    end
+    local foreign = BindPadCore.GetForeignActions()
 
     for i = 1, GetNumBindings() do
         local command, _, key1, key2 = GetBinding(i)
-        if key1 then
+        -- Skip bindings another character left in the binding set.
+        if key1 and not foreign[command] then
             profile.AllKeyBindings[key1] = command
             if key2 then
                 profile.AllKeyBindings[key2] = command
             end
+        end
+    end
+
+    -- Don't wipe GeneralKeyBindings: the binding set of this character may not hold them yet,
+    -- and wiping would lose them for every character. Only drop entries of slots no longer shared.
+    for key, action in pairs(general) do
+        if not generalActions[action] then
+            general[key] = nil
         end
     end
     for padSlot in BindPadCore.AllSlotInfoIter() do
@@ -2028,7 +2226,12 @@ function BindPadCore.DoSaveAllKeys()
         if key then
             profile.AllKeyBindings[key] = padSlot.action
             if padSlot.isForAllCharacters then
-                BindPadVars.GeneralKeyBindings[key] = padSlot.action
+                for k, action in pairs(general) do
+                    if action == padSlot.action then
+                        general[k] = nil
+                    end
+                end
+                general[key] = padSlot.action
             end
         end
     end
@@ -2053,6 +2256,16 @@ function BindPadCore.DoRestoreAllKeys()
     if count < 10 then
         BindPadFrame_OutputText("DEBUG: Something wrong. profile.AllKeyBindings is most likely broken.")
         return
+    end
+
+    -- Drop bindings picked up from another character's binding set.
+    local foreign = BindPadCore.GetForeignActions()
+    local removedForeign = {}
+    for k, v in pairs(profile.AllKeyBindings) do
+        if foreign[v] then
+            profile.AllKeyBindings[k] = nil
+            removedForeign[k] = true
+        end
     end
 
     BindPadCore.ChangingKeyBindings = true
@@ -2085,6 +2298,23 @@ function BindPadCore.DoRestoreAllKeys()
                 table.insert(to_be_removed, k)
             end
         end
+    end
+    -- Also clear BindPad bindings left in the game's binding set by another character.
+    -- (GetBinding() only lists Bindings.xml commands, so look the CLICK actions up directly.)
+    for action in pairs(foreign) do
+        for _, key in ipairs({ GetBindingKey(action) }) do
+            if profile.AllKeyBindings[key] ~= action then
+                table.insert(to_be_removed, key)
+                removedForeign[key] = true
+            end
+        end
+    end
+    local removedCount = 0
+    for _ in pairs(removedForeign) do
+        removedCount = removedCount + 1
+    end
+    if removedCount > 0 then
+        BindPadCore.Notify(format(L.TEXT_NOTICE_FOREIGN_REMOVED, removedCount))
     end
 
     for i = 1, #to_be_removed do

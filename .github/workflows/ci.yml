@@ -20,9 +20,20 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           version: 2.5.2
-          args: --check BindPad/
+          args: --check BindPad/ tests/
 
       - name: Lint
         uses: lunarmodules/luacheck@v1
         with:
-          args: BindPad
+          args: BindPad tests
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Lua 5.1
+        run: sudo apt-get update && sudo apt-get install -y lua5.1
+
+      - name: Run tests
+        run: lua5.1 tests/run.lua

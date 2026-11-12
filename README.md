@@ -43,17 +43,32 @@ Slash commands:
 | `/bp delete Realm_Character` | Delete another character's profiles |
 | `/bp copyfrom Realm_Character` | Copy profiles from another character |
 
+On servers without realms, where characters are named "Firstname Lastname", profiles are named `Ruleset_Firstname Lastname` instead, e.g. `/bp copyfrom PvE_Leehman Trueshot`. `/bp list` shows the exact names.
+
 The complete original user guide is in [BindPad/readme.txt](BindPad/readme.txt).
 
 ## Development
 
-The addon source lives in [BindPad/](BindPad/). Lua is formatted with [StyLua](https://github.com/JohnnyMorganz/StyLua) using [stylua.toml](stylua.toml) and linted with [luacheck](https://github.com/lunarmodules/luacheck) using [.luacheckrc](.luacheckrc). Editor settings are in [.editorconfig](.editorconfig). Both checks run in CI on every push and pull request, and again before each release.
+The addon source lives in [BindPad/](BindPad/). Lua is formatted with [StyLua](https://github.com/JohnnyMorganz/StyLua) using [stylua.toml](stylua.toml) and linted with [luacheck](https://github.com/lunarmodules/luacheck) using [.luacheckrc](.luacheckrc). Editor settings are in [.editorconfig](.editorconfig). Formatting, lint and tests run in CI on every push and pull request, and again before each release; a failure stops the release.
 
 ```sh
-npx @johnnymorganz/stylua-bin BindPad/          # format
-npx @johnnymorganz/stylua-bin --check BindPad/  # verify formatting
-docker run --rm -v "$PWD":/data -w /data ghcr.io/lunarmodules/luacheck:v1.2.0 BindPad  # lint
+npx @johnnymorganz/stylua-bin BindPad/ tests/          # format
+npx @johnnymorganz/stylua-bin --check BindPad/ tests/  # verify formatting
+docker run --rm -v "$PWD":/data -w /data ghcr.io/lunarmodules/luacheck:v1.2.0 BindPad tests  # lint
+lua5.1 tests/run.lua                                   # tests (luajit works too)
 ```
+
+The tests in [tests/](tests/) need nothing but Lua 5.1. [tests/wow.lua](tests/wow.lua) mocks enough of the client (key bindings with account and character binding sets, SavedVariables carried between logins, character names and rulesets) to run the real addon code through login sessions on several characters. A test logs characters in and out of a shared `World` and checks bindings and saved data:
+
+```lua
+test("a general binding reaches a new character", function()
+    local world = WorldWithGeneralBinding()
+    local alice = world:Login(wow.Character({ name = "Alice" }))
+    assert_equal(ACTION, alice:ActionOn("F1"))
+end)
+```
+
+New test files are listed in [tests/run.lua](tests/run.lua).
 
 User-facing strings live in [BindPad/Localization.lua](BindPad/Localization.lua) as one English table. Translations only list the keys they change; anything missing falls back to English. When a new global is needed (a Blizzard API, or a new function referenced from XML), add it to `.luacheckrc`.
 

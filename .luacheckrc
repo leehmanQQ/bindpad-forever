@@ -104,6 +104,7 @@ read_globals = {
     "C_Item",
     "C_MountJournal",
     "C_PetJournal",
+    "C_GameRules",
     "C_SpecializationInfo",
     "C_Spell",
     "C_SpellBook",
@@ -137,11 +138,13 @@ read_globals = {
     "LoadBindings",
     "PickupMacro",
     "PlaySound",
+    "RegionalUniqueNamesEnabled",
     "ResetCursor",
     "RunBinding",
     "SaveBindings",
     "SetBinding",
     "SetCursor",
+    "time",
     "UnitClass",
     "UnitName",
 
@@ -150,6 +153,7 @@ read_globals = {
     "ChatEdit_InsertLink",
     "ChatFrame1",
     "ChatFrameUtil",
+    "Constants",
     "CreateAndInitFromMixin",
     "Enum",
     "GameFontHighlightSmall",
@@ -206,4 +210,9 @@ read_globals = {
     "SLASH_SCRIPT1",
     "SLASH_SUMMON_BATTLE_PET1",
     "SLASH_USE1",
+}
+
+-- Tests run outside the game: plain Lua 5.1 plus the runner's helpers.
+files["tests/"] = {
+    globals = { "test", "assert_equal" },
 }
